@@ -1,7 +1,7 @@
-import React from "react";
+import React, { useState } from "react";
 
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { Toaster } from "react-hot-toast";
+import { Toaster, toast } from "react-hot-toast";
 import BlogLandingPage from "./pages/Blog/components/BlogLandingPage";
 import BlogPostView from "./pages/Blog/components/BlogPostView";
 import PostByTags from "./pages/Blog/components/PostByTags";
@@ -12,8 +12,38 @@ import BlogPosts from "./pages/Admin/components/BlogPosts";
 import BlogPostEditor from "./pages/Admin/components/BlogPostEditor";
 import Comments from "./pages/Admin/components/Comments";
 import PrivateRoute from "./routes/PrivateRoute";
+import FloatingButton from "./components/FloatingButton";
+import PostModal from "./components/PostModal";
 
 const App = () => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleOpenModal = () => setIsModalOpen(true);
+  const handleCloseModal = () => setIsModalOpen(false);
+
+  const handleFormSubmit = async (postData) => {
+    try {
+      const response = await fetch('http://localhost:5000/api/posts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(postData),
+      });
+
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+
+      const newPost = await response.json();
+      toast.success('Post created successfully!');
+      handleCloseModal();
+      // Optionally, you can redirect to the new post or update the post list
+    } catch (error) {
+      toast.error('Failed to create post.');
+    }
+  };
+
   return (
     <div>
       <Router>
@@ -36,6 +66,13 @@ const App = () => {
           <Route path="/admin-login" element={<AdminLogin />} />
         </Routes>
       </Router>
+
+      <FloatingButton onClick={handleOpenModal} />
+      <PostModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        onSubmit={handleFormSubmit}
+      />
 
       <Toaster
         toastOptions={{
