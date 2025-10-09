@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
-import BlogLayout from '../../../components/Layouts/BlogLayout/BlogLayout';
+import React, { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
+import BlogLayout from "../../../components/Layouts/BlogLayout/BlogLayout";
+import ModernCommentSection from "../../../components/ModernCommentSection";
 
 const BlogPostView = () => {
   const { id } = useParams();
@@ -12,9 +13,9 @@ const BlogPostView = () => {
     const fetchPost = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`http://localhost:5000/api/posts/${id}`);
+        const response = await fetch(`http://localhost:5009/api/blogposts/${id}`);
         if (!response.ok) {
-          throw new Error('Network response was not ok');
+          throw new Error("Network response was not ok");
         }
         const data = await response.json();
         setPost(data);
@@ -29,34 +30,60 @@ const BlogPostView = () => {
   }, [id]);
 
   if (loading) {
-    return <BlogLayout><p>Loading...</p></BlogLayout>;
+    return (
+      <BlogLayout>
+        <div className="max-w-4xl mx-auto">
+          <p>Loading...</p>
+        </div>
+      </BlogLayout>
+    );
   }
 
   if (error) {
-    return <BlogLayout><p>Error: {error}</p></BlogLayout>;
+    return (
+      <BlogLayout>
+        <div className="max-w-4xl mx-auto">
+          <p>Error: {error}</p>
+        </div>
+      </BlogLayout>
+    );
   }
 
   if (!post) {
-    return <BlogLayout><p>Post not found.</p></BlogLayout>;
+    return (
+      <BlogLayout>
+        <div className="max-w-4xl mx-auto">
+          <p>Post not found.</p>
+        </div>
+      </BlogLayout>
+    );
   }
 
   return (
     <BlogLayout>
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-4xl font-bold text-gray-800 mb-4">{post.title}</h1>
-        <div className="text-gray-600 mb-8">
-          <span>By {post.author}</span>
-          <span className="mx-2">•</span>
-          <span>{new Date(post.createdAt).toLocaleDateString()}</span>
-        </div>
-        <div className="prose prose-lg max-w-none">
-          {post.content}
-        </div>
-        <div className="mt-8">
-          {post.tags.map(tag => (
-            <span key={tag} className="inline-block bg-gray-200 rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2">#{tag}</span>
-          ))}
-        </div>
+        {/* Blog Post Content */}
+        <article className="mb-12">
+          <h1 className="text-4xl font-bold text-gray-800 mb-4">{post.title}</h1>
+          <div className="text-gray-600 mb-8">
+            <span>By {post.author?.name || "Unknown Author"}</span>
+            <span className="mx-2">•</span>
+            <span>{post.date || new Date(post.createdAt).toLocaleDateString()}</span>
+          </div>
+          <div className="prose prose-lg max-w-none mb-8">{post.content || post.description}</div>
+          <div className="mt-8">
+            {post.tags?.map((tag) => (
+              <span key={tag} className="inline-block bg-gray-200 rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2 mb-2">
+                #{tag}
+              </span>
+            ))}
+          </div>
+        </article>
+
+        {/* Comments Section */}
+        <section className="border-t border-gray-200 pt-8">
+          <ModernCommentSection />
+        </section>
       </div>
     </BlogLayout>
   );

@@ -23,10 +23,6 @@ const blogPostSchema = new mongoose.Schema({
     required: [true, "Description is required"],
     minlength: 20,
   },
-  content: {
-    type: String,
-    default: "", // Optional — for future extended content
-  },
   tags: {
     type: [String],
     default: [],
@@ -56,4 +52,3 @@ const blogPostSchema = new mongoose.Schema({
 // Create and export model
 const BlogPost = mongoose.model("BlogPost", blogPostSchema);
 export default BlogPost;
-

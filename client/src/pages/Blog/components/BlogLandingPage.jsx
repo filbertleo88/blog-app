@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import BlogPostCard from './BlogPostCard';
-import BlogLayout from '../../../components/Layouts/BlogLayout/BlogLayout';
+import React, { useState, useEffect } from "react";
+import BlogPostCard from "./BlogPostCard";
+import BlogLayout from "../../../components/Layouts/BlogLayout/BlogLayout";
 
 const BlogLandingPage = () => {
   const [posts, setPosts] = useState([]);
@@ -11,9 +11,9 @@ const BlogLandingPage = () => {
     const fetchPosts = async () => {
       try {
         setLoading(true);
-        const response = await fetch('http://localhost:5000/api/posts');
+        const response = await fetch("http://localhost:5009/api/blogposts");
         if (!response.ok) {
-          throw new Error('Network response was not ok');
+          throw new Error("Network response was not ok");
         }
         const data = await response.json();
         setPosts(data);
@@ -28,11 +28,19 @@ const BlogLandingPage = () => {
   }, []);
 
   if (loading) {
-    return <BlogLayout><p>Loading...</p></BlogLayout>;
+    return (
+      <BlogLayout>
+        <p>Loading...</p>
+      </BlogLayout>
+    );
   }
 
   if (error) {
-    return <BlogLayout><p>Error: {error}</p></BlogLayout>;
+    return (
+      <BlogLayout>
+        <p>Error: {error}</p>
+      </BlogLayout>
+    );
   }
 
   return (

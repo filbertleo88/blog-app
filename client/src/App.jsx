@@ -23,24 +23,24 @@ const App = () => {
 
   const handleFormSubmit = async (postData) => {
     try {
-      const response = await fetch('http://localhost:5000/api/posts', {
-        method: 'POST',
+      const response = await fetch("http://localhost:5009/api/blogposts", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(postData),
       });
 
       if (!response.ok) {
-        throw new Error('Network response was not ok');
+        throw new Error("Network response was not ok");
       }
 
       const newPost = await response.json();
-      toast.success('Post created successfully!');
+      toast.success("Post created successfully!");
       handleCloseModal();
       // Optionally, you can redirect to the new post or update the post list
     } catch (error) {
-      toast.error('Failed to create post.');
+      toast.error("Failed to create post.");
     }
   };
 
@@ -50,14 +50,14 @@ const App = () => {
         <Routes>
           {/* Default Route */}
           <Route path="/" element={<BlogLandingPage />} />
-          <Route path="/post/:id" element={<BlogPostView />} />
+          <Route path="/blogposts/:id" element={<BlogPostView />} />
           <Route path="/tag/:tag" element={<PostByTags />} />
           <Route path="/search" element={<SearchPosts />} />
 
           {/* Admin Routes */}
           <Route element={<PrivateRoute allowedRoles={["admin"]} />}>
             <Route path="/admin/dashboard" element={<Dashboard />} />
-            < Route path="/admin/posts" element={<BlogPosts />} />
+            <Route path="/admin/posts" element={<BlogPosts />} />
             <Route path="/admin/create" element={<BlogPostEditor />} />
             <Route path="/admin/edit/:postSlug" element={<BlogPostEditor isEdit={true} />} />
             <Route path="/admin/comments" element={<Comments />} />
@@ -68,11 +68,7 @@ const App = () => {
       </Router>
 
       <FloatingButton onClick={handleOpenModal} />
-      <PostModal
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
-        onSubmit={handleFormSubmit}
-      />
+      <PostModal isOpen={isModalOpen} onClose={handleCloseModal} onSubmit={handleFormSubmit} />
 
       <Toaster
         toastOptions={{
