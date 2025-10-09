@@ -1,5 +1,5 @@
 import express from "express";
-import { getAllBlogPosts, createBlogPost, getBlogPostById, updateBlogPost, deleteBlogPost, getBlogPostsByTag, searchBlogPosts } from "../controllers/blogPostController.js";
+import { getAllBlogPosts, createBlogPost, getBlogPostById, updateBlogPost, deleteBlogPost, getBlogPostsByTag, searchBlogPosts, getPaginatedBlogPosts } from "../controllers/blogPostController.js";
 
 const router = express.Router();
 
@@ -12,5 +12,8 @@ router.post("", createBlogPost);
 router.get("/:id", getBlogPostById);
 router.put("/:id", updateBlogPost);
 router.delete("/:id", deleteBlogPost);
+
+// Add paginated posts route
+router.get("/paginated/:page/:limit", getPaginatedBlogPosts);
 
 export default router;

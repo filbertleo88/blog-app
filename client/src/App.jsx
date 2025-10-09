@@ -21,8 +21,12 @@ const App = () => {
   const handleOpenModal = () => setIsModalOpen(true);
   const handleCloseModal = () => setIsModalOpen(false);
 
+  // In App.jsx - update the handleFormSubmit function
+  // In your App.jsx - update the handleFormSubmit function
   const handleFormSubmit = async (postData) => {
     try {
+      console.log("Submitting post data:", postData);
+
       const response = await fetch("http://localhost:5009/api/blogposts", {
         method: "POST",
         headers: {
@@ -31,16 +35,27 @@ const App = () => {
         body: JSON.stringify(postData),
       });
 
+      console.log("Response status:", response.status);
+
       if (!response.ok) {
-        throw new Error("Network response was not ok");
+        // Get the error message from the backend
+        const errorData = await response.json();
+        console.error("Backend error:", errorData);
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
       }
 
-      const newPost = await response.json();
-      toast.success("Post created successfully!");
-      handleCloseModal();
-      // Optionally, you can redirect to the new post or update the post list
+      const data = await response.json();
+      console.log("Post created successfully:", data);
+
+      // If fetchPosts is defined in App.jsx, call it to refresh the posts
+      // If not, you can reload the page or use another method to refresh data
+      window.location.reload(); // Simple solution - reload the page
+      // OR: if you have a state update function, call it here
+
+      return data;
     } catch (error) {
-      toast.error("Failed to create post.");
+      console.error("Error creating post:", error);
+      throw error; // Re-throw to be caught by PostModal
     }
   };
 

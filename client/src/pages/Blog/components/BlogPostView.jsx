@@ -58,13 +58,19 @@ const BlogPostView = () => {
       </BlogLayout>
     );
   }
-
+  // <h1 className="text-4xl font-bold text-gray-800 mb-4">{post.title}</h1>
   return (
     <BlogLayout>
-      <div className="max-w-4xl mx-auto">
-        {/* Blog Post Content */}
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        {/* Blog Post Header */}
         <article className="mb-12">
-          <h1 className="text-4xl font-bold text-gray-800 mb-4">{post.title}</h1>
+          {/* Blog Post Image */}
+          {post.image && (
+            <div className="mb-8">
+              <img src={post.image} alt={post.title} className="w-full h-64 object-cover rounded-lg shadow-md" />
+            </div>
+          )}
+          <h1 className="text-3xl lg:text-4xl font-bold text-gray-800 mb-4 leading-tight">{post.title}</h1>
           <div className="text-gray-600 mb-8">
             <span>By {post.author?.name || "Unknown Author"}</span>
             <span className="mx-2">•</span>
