@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Toaster, toast } from "react-hot-toast";
@@ -14,9 +14,12 @@ import Comments from "./pages/Admin/components/Comments";
 import PrivateRoute from "./routes/PrivateRoute";
 import FloatingButton from "./components/FloatingButton";
 import PostModal from "./components/PostModal";
+import AuthModal from "./components/Auth/AuthModal";
 
 const App = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [user, setUser] = useState(null);
 
   const handleOpenModal = () => setIsModalOpen(true);
   const handleCloseModal = () => setIsModalOpen(false);
@@ -59,6 +62,27 @@ const App = () => {
     }
   };
 
+  useEffect(() => {
+    // Check if user is logged in on app start
+    const token = localStorage.getItem("token");
+    const userData = localStorage.getItem("user");
+
+    if (token && userData) {
+      setUser(JSON.parse(userData));
+    }
+  }, []);
+
+  const handleAuthSuccess = (userData) => {
+    setUser(userData);
+    console.log("User authenticated:", userData);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    setUser(null);
+  };
+
   return (
     <div>
       <Router>
@@ -93,6 +117,17 @@ const App = () => {
           },
         }}
       />
+      {/* Login button example */}
+      {!user ? (
+        <button onClick={() => setIsAuthModalOpen(true)}>Login / Sign Up</button>
+      ) : (
+        <div>
+          <span>Welcome, {user.name}</span>
+          <button onClick={handleLogout}>Logout</button>
+        </div>
+      )}
+
+      <AuthModal isVisible={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} onAuthSuccess={handleAuthSuccess} />
     </div>
   );
 };

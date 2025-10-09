@@ -1,5 +1,5 @@
-import User from '../models/userModel.js';
-import generateToken from '../utils/generateToken.js';
+import User from "../models/User.js";
+import generateToken from "../utils/generateToken.js";
 
 const registerUser = async (req, res) => {
   const { name, email, password } = req.body;
@@ -7,7 +7,7 @@ const registerUser = async (req, res) => {
   const userExists = await User.findOne({ email });
 
   if (userExists) {
-    res.status(400).send('User already exists');
+    res.status(400).send("User already exists");
   }
 
   const user = await User.create({
@@ -24,7 +24,7 @@ const registerUser = async (req, res) => {
       token: generateToken(user._id),
     });
   } else {
-    res.status(400).send('Invalid user data');
+    res.status(400).send("Invalid user data");
   }
 };
 
@@ -41,7 +41,7 @@ const authUser = async (req, res) => {
       token: generateToken(user._id),
     });
   } else {
-    res.status(401).send('Invalid email or password');
+    res.status(401).send("Invalid email or password");
   }
 };
 
@@ -55,7 +55,7 @@ const getUserProfile = async (req, res) => {
       email: user.email,
     });
   } else {
-    res.status(404).send('User not found');
+    res.status(404).send("User not found");
   }
 };
 
