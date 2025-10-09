@@ -20,14 +20,14 @@ const App = () => {
         <Routes>
           {/* Default Route */}
           <Route path="/" element={<BlogLandingPage />} />
-          <Route path="/:slug" element={<BlogPostView />} />
+          <Route path="/post/:id" element={<BlogPostView />} />
           <Route path="/tag/: tagName" element={<PostByTags />} />
           <Route path="/search" element={<SearchPosts />} />
 
           {/* Admin Routes */}
           <Route element={<PrivateRoute allowedRoles={["admin"]} />}>
             <Route path="/admin/dashboard" element={<Dashboard />} />
-            <Route path="/admin/posts" element={<BlogPosts />} />
+            < Route path="/admin/posts" element={<BlogPosts />} />
             <Route path="/admin/create" element={<BlogPostEditor />} />
             <Route path="/admin/edit/:postSlug" element={<BlogPostEditor isEdit={true} />} />
             <Route path="/admin/comments" element={<Comments />} />
