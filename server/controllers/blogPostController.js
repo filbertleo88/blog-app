@@ -64,6 +64,29 @@ export const getBlogPostsByTag = async (req, res) => {
   }
 };
 
+export const searchBlogPosts = async (req, res) => {
+  try {
+    const { q } = req.query;
+
+    if (!q || q.trim() === "") {
+      return res.status(400).json({ message: "Search query is required" });
+    }
+
+    // Search in multiple fields
+    const posts = await BlogPost.find({
+      $or: [{ title: { $regex: q, $options: "i" } }, { description: { $regex: q, $options: "i" } }, { content: { $regex: q, $options: "i" } }, { tags: { $in: [new RegExp(q, "i")] } }],
+    }).sort({ createdAt: -1 });
+
+    res.status(200).json(posts);
+  } catch (error) {
+    console.error("Error searching posts:", error);
+    res.status(500).json({
+      message: "Server error while searching posts",
+      error: error.message,
+    });
+  }
+};
+
 export const updateBlogPost = async (req, res) => {
   try {
     const updatedBlogPost = await BlogPost.findByIdAndUpdate(req.params.id, req.body, { new: true });

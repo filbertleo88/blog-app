@@ -4,6 +4,7 @@ import cors from "cors";
 import connectDB from "./config/db.js";
 import userRoutes from "./routes/userRoutes.js";
 import blogPostRoutes from "./routes/blogPostsRoutes.js";
+import commentRoutes from "./routes/commentRoutes.js";
 
 dotenv.config();
 
@@ -16,6 +17,7 @@ app.use(express.json());
 
 app.use("/api/users", userRoutes);
 app.use("/api/blogposts", blogPostRoutes);
+app.use("/api/comments", commentRoutes);
 
 const PORT = process.env.PORT || 5009;
 
