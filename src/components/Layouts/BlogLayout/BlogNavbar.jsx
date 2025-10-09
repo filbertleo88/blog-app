@@ -1,16 +1,41 @@
+
 import React, { useState } from "react";
 import { HiOutlineMenu, HiOutlineX } from "react-icons/hi";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { LuSearch as MagnifyingGlassIcon } from "react-icons/lu";
+import { posts } from "../../../data/posts";
+
+// 1. Get all tags
+const allTags = posts.flatMap(post => post.tags);
+
+// 2. Count tag frequency
+const tagCounts = allTags.reduce((acc, tag) => {
+  acc[tag] = (acc[tag] || 0) + 1;
+  return acc;
+}, {});
+
+// 3. Get top 5 tags
+const sortedTags = Object.keys(tagCounts).sort((a, b) => tagCounts[b] - tagCounts[a]);
+const top5Tags = sortedTags.slice(0, 5);
+
 
 const menuItems = [
     { label: "Home", path: "/" },
-    { label: "React JS", path: "/react" },
-    { label: "Next JS", path: "/next" },
+    ...top5Tags.map(tag => ({ label: tag, path: `/tag/${tag}` }))
 ];
 
 const BlogNavbar = ({ activeMenu, onLoginClick }) => {
   const [openSideMenu, setOpenSideMenu] = useState(false);
+  const [isSearchVisible, setIsSearchVisible] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const navigate = useNavigate();
+
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/search?q=${searchQuery}`);
+    }
+  };
 
   return (
     <header className="bg-white border-b border-gray-200 shadow-sm py-4 px-7 sticky top-0 z-50">
@@ -42,9 +67,26 @@ const BlogNavbar = ({ activeMenu, onLoginClick }) => {
 
         {/* RIGHT: SEARCH + LOGIN */}
         <div className="flex items-center gap-6">
-          <button className="hover:text-sky-500 cursor-pointer">
-            <MagnifyingGlassIcon className="text-[22px]" />
-          </button>
+          {isSearchVisible ? (
+            <form className="relative" onSubmit={handleSearchSubmit}>
+              <input
+                type="text"
+                name="search"
+                placeholder="Search..."
+                className="border-2 rounded-lg py-1 px-2"
+                autoFocus
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </form>
+          ) : (
+            <button
+              onClick={() => setIsSearchVisible(true)}
+              className="hover:text-sky-500 cursor-pointer"
+            >
+              <MagnifyingGlassIcon className="text-[22px]" />
+            </button>
+          )}
 
           <button onClick={onLoginClick} className="bg-gradient-to-r from-sky-500 to-cyan-400 text-white px-4 py-2 rounded-lg hover:opacity-90 transition">
             Login / SignUp

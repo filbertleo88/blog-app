@@ -1,22 +1,11 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
+import { posts } from '../../../data/posts';
 
-const recentPosts = [
-  {
-    title: 'Advanced React Patterns',
-    category: 'React',
-    image: 'https://via.placeholder.com/150',
-  },
-  {
-    title: 'State Management in Next.js',
-    category: 'Next.js',
-    image: 'https://via.placeholder.com/150',
-  },
-    {
-    title: 'Utility-First CSS with Tailwind',
-    category: 'CSS',
-    image: 'https://via.placeholder.com/150',
-  },
-];
+// Sort posts by date in descending order and take the top 5
+const recentPosts = posts
+  .sort((a, b) => new Date(b.date) - new Date(a.date))
+  .slice(0, 5);
 
 const Sidebar = () => {
   return (
@@ -25,14 +14,18 @@ const Sidebar = () => {
         Recent Posts
       </h2>
       <div>
-        {recentPosts.map((post, index) => (
-          <div key={index} className="flex items-center gap-3 mb-4">
-            <img src={post.image} alt={post.title} className="w-16 h-16 object-cover rounded-md" />
-            <div>
-              <span className="text-xs text-sky-500 font-semibold uppercase">{post.category}</span>
-              <p className="text-sm text-gray-700 hover:text-sky-500 transition cursor-pointer">{post.title}</p>
+        {recentPosts.map((post) => (
+          <Link to={`/post/${post.id}`} key={post.id} className="group">
+            <div className="flex items-start gap-4 mb-4">
+              <img src={`https://source.unsplash.com/150x150/?${post.tags[0]}`} alt={post.title} className="w-16 h-16 object-cover rounded-lg" />
+              <div>
+                <p className="text-sm font-semibold text-gray-800 group-hover:text-sky-500 transition">{post.title}</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {`${post.description.substring(0, 55)}...`}
+                </p>
+              </div>
             </div>
-          </div>
+          </Link>
         ))}
       </div>
     </aside>
