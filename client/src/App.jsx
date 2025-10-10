@@ -115,9 +115,23 @@ const App = () => {
     console.log("User authenticated:", userData);
   };
 
+  // const handleLogout = () => {
+  //   localStorage.removeItem("token");
+  //   localStorage.removeItem("user");
+  //   setUser(null);
+  //   toast.success("Logged out successfully");
+  // };
+
+  // In your App.js - update handleLogout
   const handleLogout = () => {
+    // Clear authentication data
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+
+    // Clear blog-related data to prevent like state persistence
+    localStorage.removeItem("blog_visitorId");
+    localStorage.removeItem("likedPosts");
+
     setUser(null);
     toast.success("Logged out successfully");
   };

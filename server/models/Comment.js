@@ -24,6 +24,10 @@ const commentSchema = new mongoose.Schema(
       ref: "Comment",
       default: null, // null for top-level comments
     },
+    createdAt: {
+      type: Date,
+      default: Date.now,
+    },
     replies: [
       {
         type: mongoose.Schema.Types.ObjectId,

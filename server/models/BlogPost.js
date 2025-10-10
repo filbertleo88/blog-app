@@ -1,3 +1,4 @@
+// // models/BlogPost.js
 // import mongoose from "mongoose";
 
 // const blogPostSchema = new mongoose.Schema({
@@ -12,6 +13,14 @@
 //     required: [true, "Description is required"],
 //     minlength: 20,
 //   },
+//   content: {
+//     type: String, // Add content field for full blog post content
+//     required: false,
+//   },
+//   image: {
+//     type: String,
+//     default: "", // Can be a URL or file path
+//   },
 //   tags: {
 //     type: [String],
 //     default: [],
@@ -22,9 +31,13 @@
 //       required: [true, "Author name is required"],
 //       trim: true,
 //     },
+//     avatar: {
+//       type: String,
+//       default: "https://i.pravatar.cc/50", // Default author avatar
+//     },
 //   },
 //   date: {
-//     type: String, // Storing formatted string like “Oct 8, 2025”
+//     type: String, // Storing formatted string like "Oct 8, 2025"
 //     default: () =>
 //       new Date().toLocaleDateString("en-US", {
 //         month: "short",
@@ -58,12 +71,12 @@ const blogPostSchema = new mongoose.Schema({
     minlength: 20,
   },
   content: {
-    type: String, // Add content field for full blog post content
+    type: String,
     required: false,
   },
   image: {
     type: String,
-    default: "", // Can be a URL or file path
+    default: "",
   },
   tags: {
     type: [String],
@@ -77,11 +90,11 @@ const blogPostSchema = new mongoose.Schema({
     },
     avatar: {
       type: String,
-      default: "https://i.pravatar.cc/50", // Default author avatar
+      default: "https://i.pravatar.cc/50",
     },
   },
   date: {
-    type: String, // Storing formatted string like "Oct 8, 2025"
+    type: String,
     default: () =>
       new Date().toLocaleDateString("en-US", {
         month: "short",
@@ -89,12 +102,33 @@ const blogPostSchema = new mongoose.Schema({
         year: "numeric",
       }),
   },
+  views: {
+    type: Number,
+    default: 0,
+  },
+  likes: {
+    type: Number,
+    default: 0,
+  },
+  likedBy: {
+    type: [String], // Store user IDs or IP addresses to prevent duplicate likes
+    default: [],
+  },
   createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+  updatedAt: {
     type: Date,
     default: Date.now,
   },
 });
 
-// Create and export model
+// Update the updatedAt field before saving
+blogPostSchema.pre("save", function (next) {
+  this.updatedAt = Date.now();
+  next();
+});
+
 const BlogPost = mongoose.model("BlogPost", blogPostSchema);
 export default BlogPost;
