@@ -1,17 +1,15 @@
+// config/passport.js
 import { Strategy as JwtStrategy, ExtractJwt } from "passport-jwt";
 import User from "../models/User.js";
-import dotenv from "dotenv";
 
-dotenv.config();
-
-const options = {
+const opts = {
   jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-  secretOrKey: process.env.JWT_SECRET || "your-fallback-secret",
+  secretOrKey: process.env.JWT_SECRET,
 };
 
-export const jwtStrategy = new JwtStrategy(options, async (payload, done) => {
+export const jwtStrategy = new JwtStrategy(opts, async (jwt_payload, done) => {
   try {
-    const user = await User.findById(payload.id);
+    const user = await User.findById(jwt_payload.id);
     if (user) {
       return done(null, user);
     }
