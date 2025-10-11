@@ -18,24 +18,48 @@ const Comments = () => {
   const [showPostModal, setShowPostModal] = useState(false);
   const navigate = useNavigate();
 
-  // Fetch comments from backend
+  // Fetch comments from backend - only from author's own posts
   const fetchComments = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const response = await fetch("http://localhost:5009/api/blogposts");
+      const token = localStorage.getItem("token");
+      const currentUser = JSON.parse(localStorage.getItem("user"));
+
+      if (!currentUser || !token) {
+        navigate("/");
+        return;
+      }
+
+      // Fetch only the current user's posts
+      const response = await fetch("http://localhost:5009/api/blogposts", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
       if (!response.ok) {
         throw new Error("Failed to fetch blog posts");
       }
 
-      const posts = await response.json();
+      const allPosts = await response.json();
 
-      // Fetch comments for each post
+      // Filter posts by current user (author)
+      const userPosts = Array.isArray(allPosts) ? allPosts.filter((post) => post.author?._id === currentUser.id || post.author?.id === currentUser.id || post.author_id === currentUser.id) : [];
+
+      console.log("User's posts:", userPosts);
+
+      // Fetch comments for each of the user's posts
       const allComments = [];
-      for (const post of posts) {
+      for (const post of userPosts) {
         try {
-          const commentsResponse = await fetch(`http://localhost:5009/api/comments/post/${post._id}`);
+          const commentsResponse = await fetch(`http://localhost:5009/api/comments/post/${post._id}`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
           if (commentsResponse.ok) {
             const postComments = await commentsResponse.json();
             // Add post information to each comment
@@ -509,7 +533,7 @@ const Comments = () => {
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
           <div>
             <h1 className="text-3xl font-bold text-gray-800 mb-2">Comments</h1>
-            <p className="text-gray-600">Manage and moderate user comments</p>
+            <p className="text-gray-600">Manage comments on your blog posts</p>
           </div>
 
           {/* Search Bar */}
@@ -536,7 +560,7 @@ const Comments = () => {
               label: "Total Comments",
               value: comments.length,
               icon: "💬",
-              description: "All comments across posts",
+              description: "All comments on your posts",
               color: "from-blue-500 to-cyan-500",
             },
             {
@@ -547,10 +571,10 @@ const Comments = () => {
               color: "from-green-500 to-emerald-500",
             },
             {
-              label: "Active Posts",
+              label: "Your Posts",
               value: new Set(comments.filter((c) => c.post).map((c) => c.post.title)).size,
               icon: "📝",
-              description: "Posts with comments",
+              description: "Your posts with comments",
               color: "from-purple-500 to-pink-500",
             },
             {
@@ -587,7 +611,7 @@ const Comments = () => {
         <div className="bg-white rounded-2xl shadow-sm p-12 text-center border border-gray-100">
           <div className="text-6xl mb-4">💬</div>
           <h3 className="text-xl font-bold text-gray-800 mb-2">{searchTerm ? "No matching comments" : "No comments yet"}</h3>
-          <p className="text-gray-600 mb-6">{searchTerm ? "Try adjusting your search terms" : "Comments from your blog posts will appear here."}</p>
+          <p className="text-gray-600 mb-6">{searchTerm ? "Try adjusting your search terms" : "Comments on your blog posts will appear here."}</p>
           {searchTerm && (
             <button type="button" onClick={() => setSearchTerm("")} className="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors">
               Clear Search
