@@ -22,7 +22,6 @@ const SearchPosts = () => {
           return;
         }
 
-        // Use the correct search endpoint
         const response = await fetch(`http://localhost:5009/api/blogposts/search?q=${encodeURIComponent(query)}`);
 
         if (!response.ok) {
@@ -30,7 +29,11 @@ const SearchPosts = () => {
         }
 
         const data = await response.json();
-        setPosts(data);
+
+        // ✅ Only include published posts
+        const publishedPosts = data.filter((post) => post.status === "published");
+
+        setPosts(publishedPosts);
       } catch (error) {
         setError(error.message);
         console.error("Search error:", error);
@@ -45,14 +48,12 @@ const SearchPosts = () => {
   if (loading) {
     return (
       <BlogLayout>
-        <div className="max-w-6xl mx-auto px-4">
-          <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 rounded w-1/3 mb-8"></div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {[...Array(4)].map((_, index) => (
-                <div key={index} className="bg-gray-200 rounded-lg h-80"></div>
-              ))}
-            </div>
+        <div className="max-w-6xl mx-auto px-4 animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-1/3 mb-8"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="bg-gray-200 rounded-lg h-80"></div>
+            ))}
           </div>
         </div>
       </BlogLayout>
@@ -76,7 +77,7 @@ const SearchPosts = () => {
     <BlogLayout>
       <div className="max-w-6xl mx-auto px-4">
         <h1 className="text-2xl font-bold text-gray-800 mb-2">Search Results {query && `for "${query}"`}</h1>
-        <p className="text-gray-600 mb-8">{posts.length > 0 ? `Found ${posts.length} post${posts.length !== 1 ? "s" : ""} matching your search` : query ? "No posts found for your search query" : "Enter a search term to find posts"}</p>
+        <p className="text-gray-600 mb-8">{posts.length > 0 ? `Found ${posts.length} published post${posts.length !== 1 ? "s" : ""}` : query ? "No published posts found for your search query" : "Enter a search term to find posts"}</p>
 
         {posts.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -86,7 +87,7 @@ const SearchPosts = () => {
           </div>
         ) : query ? (
           <div className="text-center py-12">
-            <p className="text-gray-500 text-lg mb-4">No posts found for "{query}"</p>
+            <p className="text-gray-500 text-lg mb-4">No published posts found for "{query}"</p>
             <p className="text-gray-400">Try different keywords or browse all posts.</p>
           </div>
         ) : null}

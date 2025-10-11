@@ -14,11 +14,14 @@ const PostByTags = () => {
     const fetchPosts = async () => {
       try {
         setLoading(true);
-        setError(null); // Reset error on new fetch
+        setError(null);
 
         const response = await axios.get(`http://localhost:5009/api/blogposts/tags/${encodeURIComponent(tag)}`);
 
-        setPosts(response.data);
+        // ✅ Only show published posts
+        const publishedPosts = response.data.filter((post) => post.status === "published");
+
+        setPosts(publishedPosts);
       } catch (error) {
         setError(error.response?.data?.message || error.message || "Failed to fetch posts");
         console.error("Error fetching posts by tag:", error);
@@ -27,22 +30,18 @@ const PostByTags = () => {
       }
     };
 
-    if (tag) {
-      fetchPosts();
-    }
+    if (tag) fetchPosts();
   }, [tag]);
 
   if (loading) {
     return (
       <BlogLayout>
-        <div className="max-w-6xl mx-auto px-4">
-          <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 rounded w-1/3 mb-8"></div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {[...Array(4)].map((_, index) => (
-                <div key={index} className="bg-gray-200 rounded-lg h-80"></div>
-              ))}
-            </div>
+        <div className="max-w-6xl mx-auto px-4 animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-1/3 mb-8"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="bg-gray-200 rounded-lg h-80"></div>
+            ))}
           </div>
         </div>
       </BlogLayout>
@@ -71,7 +70,8 @@ const PostByTags = () => {
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-gray-800 mb-2">Posts Tagged with "{tag}"</h1>
           <p className="text-gray-600">
-            Found {posts.length} post{posts.length !== 1 ? "s" : ""} matching this tag
+            Found {posts.length} published post
+            {posts.length !== 1 ? "s" : ""} matching this tag
           </p>
         </div>
 
@@ -83,7 +83,7 @@ const PostByTags = () => {
           </div>
         ) : (
           <div className="text-center py-12">
-            <p className="text-gray-500 text-lg mb-4">No posts found for "{tag}"</p>
+            <p className="text-gray-500 text-lg mb-4">No published posts found for "{tag}"</p>
             <p className="text-gray-400">Try browsing other tags or check back later.</p>
           </div>
         )}

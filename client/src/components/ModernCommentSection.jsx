@@ -1,16 +1,22 @@
 import React, { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { FaReply } from "react-icons/fa";
 import { IoMdArrowDropdown } from "react-icons/io";
 import { motion, AnimatePresence } from "framer-motion";
 import { formatDistanceToNow } from "date-fns";
+import AuthModal from "./Auth/AuthModal";
 
-const Comment = ({ comment, onAddReply, level = 0 }) => {
+const Comment = ({ comment, onAddReply, level = 0, isAuthenticated, onAuthRequired }) => {
   const [showReplies, setShowReplies] = useState(false);
   const [isReplying, setIsReplying] = useState(false);
   const [replyText, setReplyText] = useState("");
 
   const handleAddReply = () => {
+    if (!isAuthenticated) {
+      onAuthRequired();
+      return;
+    }
+
     if (replyText.trim()) {
       onAddReply(comment._id, replyText);
       setReplyText("");
@@ -19,6 +25,11 @@ const Comment = ({ comment, onAddReply, level = 0 }) => {
   };
 
   const handleToggleReplying = () => {
+    if (!isAuthenticated) {
+      onAuthRequired();
+      return;
+    }
+
     const newIsReplying = !isReplying;
     setIsReplying(newIsReplying);
     if (newIsReplying) {
@@ -47,7 +58,11 @@ const Comment = ({ comment, onAddReply, level = 0 }) => {
           <p className="text-gray-700 mt-1">{comment.text}</p>
           <div className="flex items-center justify-between mt-4 text-sm">
             {level < 2 && (
-              <button onClick={handleToggleReplying} className="flex items-center space-x-2 text-gray-500 hover:text-gray-900 transition-colors duration-200">
+              <button
+                onClick={handleToggleReplying}
+                className={`flex items-center space-x-2 transition-colors duration-200 ${isAuthenticated ? "text-gray-500 hover:text-gray-900" : "text-gray-300 cursor-not-allowed"}`}
+                title={!isAuthenticated ? "Please login to reply" : ""}
+              >
                 <FaReply />
                 <span>Reply</span>
               </button>
@@ -89,7 +104,7 @@ const Comment = ({ comment, onAddReply, level = 0 }) => {
         {showReplies && comment.replies && (
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="mt-4 space-y-4 pt-4 border-t border-gray-200">
             {comment.replies.map((reply) => (
-              <Comment key={reply._id} comment={reply} onAddReply={onAddReply} level={level + 1} />
+              <Comment key={reply._id} comment={reply} onAddReply={onAddReply} level={level + 1} isAuthenticated={isAuthenticated} onAuthRequired={onAuthRequired} />
             ))}
           </motion.div>
         )}
@@ -98,13 +113,37 @@ const Comment = ({ comment, onAddReply, level = 0 }) => {
   );
 };
 
-const ModernCommentSection = () => {
-  const { id: postId } = useParams(); // Get postId from URL params
+const ModernCommentSection = ({ onCommentAction, isAuthenticated, onAuthRequired }) => {
+  const { id: postId } = useParams();
+  const navigate = useNavigate();
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isCommentBoxOpen, setIsCommentBoxOpen] = useState(false);
   const [newComment, setNewComment] = useState("");
+  const [currentUser, setCurrentUser] = useState(null);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
+  // Get current user from localStorage
+  useEffect(() => {
+    const userData = localStorage.getItem("user");
+    if (userData) {
+      const user = JSON.parse(userData);
+      setCurrentUser(user);
+    }
+  }, []);
+
+  // Handle authentication requirement
+  const handleAuthRequired = () => {
+    setIsAuthModalOpen(true);
+  };
+
+  // Handle successful authentication
+  const handleAuthSuccess = (userData) => {
+    setCurrentUser(userData);
+    setIsAuthModalOpen(false);
+    // You can add any post-authentication logic here
+  };
 
   // Fetch comments from database
   useEffect(() => {
@@ -133,9 +172,16 @@ const ModernCommentSection = () => {
   }, [postId]);
 
   const handleAddReply = async (parentId, text) => {
+    if (!isAuthenticated) {
+      handleAuthRequired();
+      return;
+    }
+
     if (text.trim() === "") return;
 
     try {
+      const userData = currentUser || { name: "Unknown User", avatar: "https://i.pravatar.cc/50" };
+
       const response = await fetch("http://localhost:5009/api/comments", {
         method: "POST",
         headers: {
@@ -143,9 +189,10 @@ const ModernCommentSection = () => {
         },
         body: JSON.stringify({
           postId,
-          user: "@CurrentUser", // You can replace this with actual user data
+          user: userData.name || userData.username || "@CurrentUser",
           text,
           parentId,
+          avatar: userData.avatar || userData.profilePicture || "https://i.pravatar.cc/50",
         }),
       });
 
@@ -182,9 +229,16 @@ const ModernCommentSection = () => {
   };
 
   const handleAddComment = async () => {
+    if (!isAuthenticated) {
+      handleAuthRequired();
+      return;
+    }
+
     if (newComment.trim() === "") return;
 
     try {
+      const userData = currentUser || { name: "Unknown User", avatar: "https://i.pravatar.cc/50" };
+
       const response = await fetch("http://localhost:5009/api/comments", {
         method: "POST",
         headers: {
@@ -192,8 +246,9 @@ const ModernCommentSection = () => {
         },
         body: JSON.stringify({
           postId,
-          user: "@CurrentUser", // Replace with actual user data
+          user: userData.name || userData.username || "@CurrentUser",
           text: newComment,
+          avatar: userData.avatar || userData.profilePicture || "https://i.pravatar.cc/50",
         }),
       });
 
@@ -209,6 +264,14 @@ const ModernCommentSection = () => {
       console.error("Error adding comment:", error);
       setError("Failed to add comment");
     }
+  };
+
+  const handleOpenCommentBox = () => {
+    if (!isAuthenticated) {
+      handleAuthRequired();
+      return;
+    }
+    setIsCommentBoxOpen(true);
   };
 
   if (loading) {
@@ -237,43 +300,75 @@ const ModernCommentSection = () => {
   }
 
   return (
-    <div className="bg-white p-4 sm:p-6 lg:p-8 rounded-lg shadow-md">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-800">Comments {comments.length > 0 && `(${comments.length})`}</h2>
-        <button
-          onClick={() => setIsCommentBoxOpen(true)}
-          className="bg-gradient-to-r from-[#2193b0] to-[#6dd5ed] text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:shadow-lg transform hover:-translate-y-1 transition-all duration-200"
-        >
-          Add Comment
-        </button>
-      </div>
+    <>
+      <div className="bg-white p-4 sm:p-6 lg:p-8 rounded-lg shadow-md">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold text-gray-800">Comments {comments.length > 0 && `(${comments.length})`}</h2>
+          <button
+            onClick={handleOpenCommentBox}
+            className={`font-semibold py-2 px-4 rounded-lg shadow-md hover:shadow-lg transform hover:-translate-y-1 transition-all duration-200 ${
+              isAuthenticated ? "bg-gradient-to-r from-[#2193b0] to-[#6dd5ed] text-white" : "bg-gray-300 text-gray-500 cursor-not-allowed"
+            }`}
+            title={!isAuthenticated ? "Please login to comment" : ""}
+          >
+            Add Comment
+          </button>
+        </div>
 
-      <AnimatePresence>
-        {isCommentBoxOpen && (
-          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="mb-6">
-            <textarea
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-400 focus:border-blue-400 transition"
-              rows="3"
-              placeholder="Write a comment..."
-            ></textarea>
-            <div className="flex justify-end gap-2 mt-2">
-              <button onClick={() => setIsCommentBoxOpen(false)} className="px-3 py-1 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition text-sm">
-                Cancel
-              </button>
-              <button onClick={handleAddComment} className="px-3 py-1 bg-sky-500 text-white rounded-lg hover:bg-sky-600 transition text-sm">
-                Post Comment
-              </button>
-            </div>
-          </motion.div>
+        {!isAuthenticated && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6 text-center">
+            <p className="text-yellow-800">
+              Please{" "}
+              <button onClick={handleAuthRequired} className="text-blue-600 hover:text-blue-800 underline font-medium">
+                login
+              </button>{" "}
+              to comment on this post.
+            </p>
+          </div>
         )}
-      </AnimatePresence>
 
-      <div className="space-y-6">
-        {comments.length > 0 ? comments.map((comment) => <Comment key={comment._id} comment={comment} onAddReply={handleAddReply} />) : <div className="text-center py-8 text-gray-500">No comments yet. Be the first to comment!</div>}
+        <AnimatePresence>
+          {isCommentBoxOpen && (
+            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="mb-6">
+              <div className="flex items-start space-x-3 mb-3">
+                <img src={currentUser?.avatar || currentUser?.profilePicture || "https://i.pravatar.cc/50"} alt="Your avatar" className="w-8 h-8 rounded-full" />
+                <span className="font-semibold text-gray-900">{currentUser?.name || currentUser?.username || "You"}</span>
+              </div>
+              <textarea
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-400 focus:border-blue-400 transition resize-none"
+                rows="4"
+                placeholder="Write a comment..."
+              ></textarea>
+              <div className="flex justify-end gap-2 mt-3">
+                <button onClick={() => setIsCommentBoxOpen(false)} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition text-sm">
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAddComment}
+                  disabled={!newComment.trim()}
+                  className={`px-4 py-2 rounded-lg transition text-sm ${newComment.trim() ? "bg-sky-500 text-white hover:bg-sky-600" : "bg-gray-300 text-gray-500 cursor-not-allowed"}`}
+                >
+                  Post Comment
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <div className="space-y-6">
+          {comments.length > 0 ? (
+            comments.map((comment) => <Comment key={comment._id} comment={comment} onAddReply={handleAddReply} isAuthenticated={isAuthenticated} onAuthRequired={handleAuthRequired} />)
+          ) : (
+            <div className="text-center py-8 text-gray-500">{isAuthenticated ? "No comments yet. Be the first to comment!" : "No comments yet. Login to be the first to comment!"}</div>
+          )}
+        </div>
       </div>
-    </div>
+
+      {/* Auth Modal */}
+      <AuthModal isVisible={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} onAuthSuccess={handleAuthSuccess} />
+    </>
   );
 };
 

@@ -1,48 +1,4 @@
-// import mongoose from "mongoose";
-
-// const blogPostSchema = new mongoose.Schema({
-//   title: {
-//     type: String,
-//     required: [true, "Title is required"],
-//     trim: true,
-//     minlength: 5,
-//   },
-//   description: {
-//     type: String,
-//     required: [true, "Description is required"],
-//     minlength: 20,
-//   },
-//   tags: {
-//     type: [String],
-//     default: [],
-//   },
-//   author: {
-//     name: {
-//       type: String,
-//       required: [true, "Author name is required"],
-//       trim: true,
-//     },
-//   },
-//   date: {
-//     type: String, // Storing formatted string like “Oct 8, 2025”
-//     default: () =>
-//       new Date().toLocaleDateString("en-US", {
-//         month: "short",
-//         day: "numeric",
-//         year: "numeric",
-//       }),
-//   },
-//   createdAt: {
-//     type: Date,
-//     default: Date.now,
-//   },
-// });
-
-// // Create and export model
-// const BlogPost = mongoose.model("BlogPost", blogPostSchema);
-// export default BlogPost;
-
-// models/BlogPost.js
+// models/BlogPost.js - UPDATED VERSION
 import mongoose from "mongoose";
 
 const blogPostSchema = new mongoose.Schema({
@@ -58,30 +14,55 @@ const blogPostSchema = new mongoose.Schema({
     minlength: 20,
   },
   content: {
-    type: String, // Add content field for full blog post content
+    type: String,
     required: false,
   },
   image: {
     type: String,
-    default: "", // Can be a URL or file path
+    default: "",
   },
   tags: {
     type: [String],
     default: [],
   },
+
+  // ADD STATUS FIELD
+  status: {
+    type: String,
+    enum: ["draft", "published", "archived"],
+    default: "draft",
+    required: true,
+  },
+
   author: {
+    _id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true, // Changed to true - author ID is required
+    },
     name: {
       type: String,
-      required: [true, "Author name is required"],
-      trim: true,
+      required: true,
+    },
+    email: {
+      type: String,
+      required: false,
     },
     avatar: {
       type: String,
-      default: "https://i.pravatar.cc/50", // Default author avatar
+      default: "",
     },
   },
+
+  // ADD SEPARATE AUTHOR_ID FIELD FOR EASIER QUERIES
+  author_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
+
   date: {
-    type: String, // Storing formatted string like "Oct 8, 2025"
+    type: String,
     default: () =>
       new Date().toLocaleDateString("en-US", {
         month: "short",
@@ -89,12 +70,43 @@ const blogPostSchema = new mongoose.Schema({
         year: "numeric",
       }),
   },
+  views: {
+    type: Number,
+    default: 0,
+  },
+  likes: {
+    type: Number,
+    default: 0,
+  },
+  likedBy: {
+    type: [String],
+    default: [],
+  },
+  viewedBy: {
+    type: [String],
+    default: [],
+  },
   createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+  updatedAt: {
     type: Date,
     default: Date.now,
   },
 });
 
-// Create and export model
+// Update the updatedAt field before saving
+blogPostSchema.pre("save", function (next) {
+  this.updatedAt = Date.now();
+
+  // Ensure author_id matches author._id
+  if (this.author && this.author._id && !this.author_id) {
+    this.author_id = this.author._id;
+  }
+
+  next();
+});
+
 const BlogPost = mongoose.model("BlogPost", blogPostSchema);
 export default BlogPost;

@@ -13,7 +13,7 @@ const commentSchema = new mongoose.Schema(
     },
     avatar: {
       type: String,
-      default: "https://i.pravatar.cc/50?img=7",
+      default: "",
     },
     text: {
       type: String,
@@ -23,6 +23,10 @@ const commentSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Comment",
       default: null, // null for top-level comments
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now,
     },
     replies: [
       {

@@ -54,18 +54,26 @@ const BlogLandingPage = () => {
 
         console.log(
           "Raw posts:",
-          data.map((p) => ({ title: p.title, date: p.date }))
+          data.map((p) => ({ title: p.title, date: p.date, status: p.status }))
         ); // Debug
 
-        // Sort posts by date (newest first) using the custom parser
-        const sortedPosts = data.sort((a, b) => {
+        // Filter only published posts
+        const publishedPosts = data.filter((post) => post.status === "published");
+
+        console.log(
+          "Published posts:",
+          publishedPosts.map((p) => ({ title: p.title, date: p.date, status: p.status }))
+        ); // Debug
+
+        // Sort published posts by date (newest first) using the custom parser
+        const sortedPosts = publishedPosts.sort((a, b) => {
           const dateA = parseDate(a.date);
           const dateB = parseDate(b.date);
           return dateB - dateA; // Newest first
         });
 
         console.log(
-          "Sorted posts:",
+          "Sorted published posts:",
           sortedPosts.map((p) => ({ title: p.title, date: p.date }))
         ); // Debug
 
@@ -137,7 +145,7 @@ const BlogLandingPage = () => {
           <h1 className="text-3xl font-bold text-gray-800 mb-2">Latest Blog Posts</h1>
           <p className="text-gray-600">
             Discover the latest insights and tutorials on web development
-            {posts.length > 0 && ` (${posts.length} total posts)`}
+            {posts.length > 0 && ` (${posts.length} published posts)`}
           </p>
         </div>
 
@@ -146,7 +154,7 @@ const BlogLandingPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
               {visiblePostsList.map((post, index) => (
                 <div key={post._id || post.id} className="relative">
-                  {index === 0 && <div className="absolute -top-2 -left-2 bg-sky-500 text-white text-xs font-bold px-2 py-1 rounded z-10">LATEST</div>}
+                  {index === 0 && posts.length > 1 && <div className="absolute -top-2 -left-2 bg-sky-500 text-white text-xs font-bold px-2 py-1 rounded z-10">LATEST</div>}
                   <BlogPostCard post={post} />
                 </div>
               ))}
@@ -162,7 +170,7 @@ const BlogLandingPage = () => {
                   Load More Posts ({posts.length - visiblePosts} remaining)
                 </button>
                 <p className="text-gray-500 text-sm mt-2">
-                  Showing {visiblePosts} of {posts.length} posts
+                  Showing {visiblePosts} of {posts.length} published posts
                 </p>
               </div>
             )}
@@ -170,14 +178,15 @@ const BlogLandingPage = () => {
             {/* All posts loaded message */}
             {allPostsLoaded && posts.length > 4 && (
               <div className="text-center py-8">
-                <p className="text-gray-500 text-lg">🎉 You've seen all {posts.length} posts!</p>
+                <p className="text-gray-500 text-lg">🎉 You've seen all {posts.length} published posts!</p>
               </div>
             )}
           </>
         ) : (
           <div className="text-center py-12">
-            <p className="text-gray-500 text-lg">No blog posts found.</p>
-            <p className="text-gray-400 mt-2">Check back later for new content!</p>
+            <div className="text-6xl mb-4">📝</div>
+            <p className="text-gray-500 text-lg mb-2">No published blog posts yet.</p>
+            <p className="text-gray-400">Check back later for new content!</p>
           </div>
         )}
       </div>
