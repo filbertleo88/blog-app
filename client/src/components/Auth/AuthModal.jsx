@@ -1,10 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
 import { HiOutlineX } from "react-icons/hi";
 
-const AuthModal = ({ isVisible, onClose, onAuthSuccess }) => {
-  const [isLoginView, setIsLoginView] = useState(true);
+const AuthModal = ({ isVisible, onClose, onAuthSuccess, initialView = "login", onViewSwitch, navigate }) => {
+  const [isLoginView, setIsLoginView] = useState(initialView === "login");
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
@@ -14,6 +14,11 @@ const AuthModal = ({ isVisible, onClose, onAuthSuccess }) => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // Sync with initialView prop
+  useEffect(() => {
+    setIsLoginView(initialView === "login");
+  }, [initialView]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -54,7 +59,52 @@ const AuthModal = ({ isVisible, onClose, onAuthSuccess }) => {
     return true;
   };
 
-  // In AuthModal.jsx - in the handleSubmit function
+  const handleRegister = async (formData) => {
+    try {
+      setIsLoading(true);
+      console.log("Registering user:", formData);
+
+      const response = await fetch("http://localhost:5009/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+      console.log("Registration response:", data);
+
+      if (!response.ok) {
+        throw new Error(data.message || "Registration failed");
+      }
+
+      if (data.success) {
+        // Store token and user data
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("user", JSON.stringify(data.user));
+
+        // Call the success callback
+        onAuthSuccess(data.user);
+
+        // Close the modal
+        onClose();
+
+        // Show welcome toast
+        toast.success(`Welcome to Time To Program, ${data.user.name}! 🎉`);
+
+        console.log("Registration successful, user:", data.user);
+      } else {
+        throw new Error(data.message || "Registration failed");
+      }
+    } catch (error) {
+      console.error("Registration error:", error);
+      toast.error(error.message || "Registration failed. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -77,12 +127,16 @@ const AuthModal = ({ isVisible, onClose, onAuthSuccess }) => {
 
       const data = await response.json();
 
+      if (!response.ok) {
+        throw new Error(data.message || `HTTP error! status: ${response.status}`);
+      }
+
       if (data.success) {
-        // Store token in localStorage
+        // Store token and user data in localStorage
         localStorage.setItem("token", data.token);
         localStorage.setItem("user", JSON.stringify(data.user));
 
-        // Call success callback - MAKE SURE THIS IS CALLED
+        // Call success callback
         if (onAuthSuccess) {
           onAuthSuccess(data.user);
         }
@@ -97,20 +151,24 @@ const AuthModal = ({ isVisible, onClose, onAuthSuccess }) => {
           password: "",
           confirmPassword: "",
         });
+
+        // Show success message
+        console.log(`${isLoginView ? "Login" : "Registration"} successful!`);
       } else {
         setError(data.message || "Authentication failed");
       }
     } catch (error) {
       console.error("Auth error:", error);
-      setError("Network error. Please try again.");
+      setError(error.message || "Network error. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
   const handleGoogleAuth = () => {
-    // Redirect to Google OAuth
-    window.location.href = "http://localhost:5009/api/auth/google";
+    // Redirect to Google OAuth with return URL
+    const returnUrl = window.location.pathname;
+    window.location.href = `http://localhost:5009/api/auth/google?returnUrl=${encodeURIComponent(returnUrl)}`;
   };
 
   const resetForm = () => {
@@ -124,16 +182,28 @@ const AuthModal = ({ isVisible, onClose, onAuthSuccess }) => {
   };
 
   const handleViewSwitch = () => {
-    setIsLoginView(!isLoginView);
+    const newView = !isLoginView;
+    setIsLoginView(newView);
     resetForm();
+
+    // Notify parent component to update URL
+    if (onViewSwitch) {
+      onViewSwitch(newView ? "login" : "register");
+    }
+  };
+
+  const handleClose = () => {
+    resetForm();
+    onClose();
   };
 
   if (!isVisible) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 transition-opacity duration-300">
+      {/* REMOVED jsx attribute from this div */}
       <div className="relative bg-white rounded-2xl shadow-2xl flex flex-col md:flex-row max-w-4xl w-full transform transition-all duration-300 ease-in-out scale-95 animate-fade-in-up">
-        <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 z-10">
+        <button onClick={handleClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 z-10">
           <HiOutlineX className="h-6 w-6" />
         </button>
 
@@ -154,12 +224,12 @@ const AuthModal = ({ isVisible, onClose, onAuthSuccess }) => {
             {!isLoginView && (
               <div>
                 <label className="block text-sm font-medium text-gray-700">Full Name</label>
-                <input type="text" name="name" value={formData.name} onChange={handleInputChange} className="w-full mt-1 p-3 border rounded-lg focus:ring-sky-500 focus:border-sky-500" placeholder="John Doe" />
+                <input type="text" name="name" value={formData.name} onChange={handleInputChange} className="w-full mt-1 p-3 border border-gray-300 rounded-lg focus:ring-sky-500 focus:border-sky-500" placeholder="John Doe" />
               </div>
             )}
             <div>
               <label className="block text-sm font-medium text-gray-700">Email Address</label>
-              <input type="email" name="email" value={formData.email} onChange={handleInputChange} className="w-full mt-1 p-3 border rounded-lg focus:ring-sky-500 focus:border-sky-500" placeholder="email@example.com" />
+              <input type="email" name="email" value={formData.email} onChange={handleInputChange} className="w-full mt-1 p-3 border border-gray-300 rounded-lg focus:ring-sky-500 focus:border-sky-500" placeholder="email@example.com" />
             </div>
             <div className="relative">
               <label className="block text-sm font-medium text-gray-700">Password</label>
@@ -168,7 +238,7 @@ const AuthModal = ({ isVisible, onClose, onAuthSuccess }) => {
                 name="password"
                 value={formData.password}
                 onChange={handleInputChange}
-                className="w-full mt-1 p-3 border rounded-lg focus:ring-sky-500 focus:border-sky-500"
+                className="w-full mt-1 p-3 border border-gray-300 rounded-lg focus:ring-sky-500 focus:border-sky-500"
                 placeholder="********"
               />
               <button type="button" onClick={togglePasswordVisibility} className="absolute inset-y-0 right-0 top-7 pr-3 flex items-center text-sm leading-5">
@@ -183,7 +253,7 @@ const AuthModal = ({ isVisible, onClose, onAuthSuccess }) => {
                   name="confirmPassword"
                   value={formData.confirmPassword}
                   onChange={handleInputChange}
-                  className="w-full mt-1 p-3 border rounded-lg focus:ring-sky-500 focus:border-sky-500"
+                  className="w-full mt-1 p-3 border border-gray-300 rounded-lg focus:ring-sky-500 focus:border-sky-500"
                   placeholder="********"
                 />
               </div>
