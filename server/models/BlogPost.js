@@ -1,4 +1,4 @@
-// models/BlogPost.js - Fixed version
+// models/BlogPost.js - UPDATED VERSION
 import mongoose from "mongoose";
 
 const blogPostSchema = new mongoose.Schema({
@@ -25,11 +25,20 @@ const blogPostSchema = new mongoose.Schema({
     type: [String],
     default: [],
   },
+
+  // ADD STATUS FIELD
+  status: {
+    type: String,
+    enum: ["draft", "published", "archived"],
+    default: "draft",
+    required: true,
+  },
+
   author: {
     _id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: false, // Changed to false for flexibility
+      required: true, // Changed to true - author ID is required
     },
     name: {
       type: String,
@@ -37,13 +46,21 @@ const blogPostSchema = new mongoose.Schema({
     },
     email: {
       type: String,
-      required: false, // Changed to false for flexibility
+      required: false,
     },
     avatar: {
       type: String,
       default: "",
     },
   },
+
+  // ADD SEPARATE AUTHOR_ID FIELD FOR EASIER QUERIES
+  author_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
+
   date: {
     type: String,
     default: () =>
@@ -82,6 +99,12 @@ const blogPostSchema = new mongoose.Schema({
 // Update the updatedAt field before saving
 blogPostSchema.pre("save", function (next) {
   this.updatedAt = Date.now();
+
+  // Ensure author_id matches author._id
+  if (this.author && this.author._id && !this.author_id) {
+    this.author_id = this.author._id;
+  }
+
   next();
 });
 

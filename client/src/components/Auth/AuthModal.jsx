@@ -1,3 +1,4 @@
+// components/Auth/AuthModal.jsx
 import React, { useState, useEffect } from "react";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
@@ -19,6 +20,19 @@ const AuthModal = ({ isVisible, onClose, onAuthSuccess, initialView = "login", o
   useEffect(() => {
     setIsLoginView(initialView === "login");
   }, [initialView]);
+
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (isVisible) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [isVisible]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -57,52 +71,6 @@ const AuthModal = ({ isVisible, onClose, onAuthSuccess, initialView = "login", o
     }
 
     return true;
-  };
-
-  const handleRegister = async (formData) => {
-    try {
-      setIsLoading(true);
-      console.log("Registering user:", formData);
-
-      const response = await fetch("http://localhost:5009/api/auth/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      });
-
-      const data = await response.json();
-      console.log("Registration response:", data);
-
-      if (!response.ok) {
-        throw new Error(data.message || "Registration failed");
-      }
-
-      if (data.success) {
-        // Store token and user data
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("user", JSON.stringify(data.user));
-
-        // Call the success callback
-        onAuthSuccess(data.user);
-
-        // Close the modal
-        onClose();
-
-        // Show welcome toast
-        toast.success(`Welcome to Time To Program, ${data.user.name}! 🎉`);
-
-        console.log("Registration successful, user:", data.user);
-      } else {
-        throw new Error(data.message || "Registration failed");
-      }
-    } catch (error) {
-      console.error("Registration error:", error);
-      toast.error(error.message || "Registration failed. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   const handleSubmit = async (e) => {
@@ -197,12 +165,22 @@ const AuthModal = ({ isVisible, onClose, onAuthSuccess, initialView = "login", o
     onClose();
   };
 
+  // Close modal when clicking on the background
+  const handleBackdropClick = (e) => {
+    if (e.target === e.currentTarget) {
+      handleClose();
+    }
+  };
+
   if (!isVisible) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 transition-opacity duration-300">
-      {/* REMOVED jsx attribute from this div */}
-      <div className="relative bg-white rounded-2xl shadow-2xl flex flex-col md:flex-row max-w-4xl w-full transform transition-all duration-300 ease-in-out scale-95 animate-fade-in-up">
+    <div className="fixed inset-0 flex items-center justify-center z-50 p-4 transition-opacity duration-300" onClick={handleBackdropClick}>
+      {/* Blurry Backdrop */}
+      <div className="absolute inset-0 bg-gray-900/20 backdrop-blur-sm transition-all duration-300"></div>
+
+      {/* Modal Content */}
+      <div className="relative bg-white rounded-2xl shadow-2xl flex flex-col md:flex-row max-w-4xl w-full transform transition-all duration-300 ease-in-out scale-100 relative z-10">
         <button onClick={handleClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 z-10">
           <HiOutlineX className="h-6 w-6" />
         </button>

@@ -1,19 +1,7 @@
 // controllers/authController.js
 import User from "../models/User.js";
 import jwt from "jsonwebtoken";
-
-const generateToken = (userId) => {
-  return jwt.sign(
-    {
-      userId: userId, // Make sure this matches what your middleware expects
-      id: userId, // Add this for compatibility
-    },
-    process.env.JWT_SECRET,
-    {
-      expiresIn: "30d",
-    }
-  );
-};
+import generateToken from "../utils/generateToken.js";
 
 // Register with email/password
 export const register = async (req, res) => {
@@ -136,8 +124,8 @@ export const login = async (req, res) => {
   }
 };
 
-// Google OAuth Callback
-export const googleAuthCallback = (req, res) => {
+// Google OAuth Callback - WITH AVATAR SUPPORT
+export const googleAuthCallback = async (req, res) => {
   try {
     console.log("Google OAuth callback - user:", req.user);
 
@@ -148,19 +136,35 @@ export const googleAuthCallback = (req, res) => {
 
     const token = generateToken(req.user._id);
 
-    const userData = {
+    // Store avatar in temporary session storage (Redis or in-memory)
+    const authSession = {
+      userId: req.user._id.toString(),
+      avatar: req.user.avatar, // Store avatar separately
+      expires: Date.now() + 5 * 60 * 1000, // 5 minutes expiry
+    };
+
+    // Simple in-memory storage (for development)
+    // In production, use Redis or database
+    global.authSessions = global.authSessions || new Map();
+    const sessionId = `auth_${req.user._id}_${Date.now()}`;
+    global.authSessions.set(sessionId, authSession);
+
+    // Minimal data in URL
+    const minimalUserData = {
       id: req.user._id,
       name: req.user.name,
       email: req.user.email,
-      avatar: req.user.avatar,
-      authProvider: req.user.authProvider,
+      authProvider: req.user.authProvider || "google",
       role: req.user.role,
+      sessionId: sessionId, // Pass session ID to retrieve avatar
     };
 
-    const encodedUserData = encodeURIComponent(JSON.stringify(userData));
+    const encodedUserData = encodeURIComponent(JSON.stringify(minimalUserData));
     const redirectUrl = `${process.env.FRONTEND_URL}/?auth=success&token=${token}&user=${encodedUserData}`;
 
-    console.log("Google OAuth successful, redirecting to:", redirectUrl);
+    console.log("Google OAuth successful, redirecting with avatar session");
+    console.log("Avatar stored in session:", sessionId);
+
     res.redirect(redirectUrl);
   } catch (error) {
     console.error("Google auth callback error:", error);
@@ -190,10 +194,6 @@ export const getCurrentUser = async (req, res) => {
         avatar: user.avatar,
         authProvider: user.authProvider,
         role: user.role,
-        bio: user.bio,
-        website: user.website,
-        twitter: user.twitter,
-        github: user.github,
         createdAt: user.createdAt,
       },
     });
@@ -260,10 +260,6 @@ export const updateProfile = async (req, res) => {
         authProvider: updatedUser.authProvider,
         role: updatedUser.role,
         username: updatedUser.username,
-        bio: updatedUser.bio,
-        website: updatedUser.website,
-        twitter: updatedUser.twitter,
-        github: updatedUser.github,
         createdAt: updatedUser.createdAt,
       },
     });

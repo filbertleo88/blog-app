@@ -15,7 +15,9 @@ import {
   unlikeBlogPost,
   toggleLike,
   getPopularPosts,
+  getMyDrafts,
 } from "../controllers/blogPostController.js";
+import { protect } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
@@ -32,11 +34,15 @@ router.get("/tags/:tag", getBlogPostsByTag);
 router.get("/search", searchBlogPosts);
 router.get("/paginated/:page/:limit", getPaginatedBlogPosts);
 router.get("", getAllBlogPosts);
-router.post("", createBlogPost);
+// router.post("", createBlogPost);
 router.get("/:id", getBlogPostById);
-router.put("/:id", updateBlogPost);
-router.delete("/:id", deleteBlogPost);
+// router.put("/:id", updateBlogPost);
+// router.delete("/:id", deleteBlogPost);
+
+// Protected routes
+router.post("/", protect, createBlogPost);
+router.put("/:id", protect, updateBlogPost);
+router.delete("/:id", protect, deleteBlogPost);
+router.get("/my/drafts", protect, getMyDrafts);
 
 export default router;
-
-

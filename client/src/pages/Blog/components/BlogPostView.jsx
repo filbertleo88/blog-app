@@ -27,26 +27,6 @@ const BlogPostView = () => {
     }
   }, []);
 
-  // Get the appropriate user identifier
-  // const getUserId = () => {
-  //   const userData = localStorage.getItem("user");
-  //   if (userData) {
-  //     try {
-  //       const user = JSON.parse(userData);
-  //       return user.id || user.id || user.email;
-  //     } catch (error) {
-  //       console.error("Error parsing user data:", error);
-  //     }
-  //   }
-
-  //   // Fallback to session ID for non-authenticated users
-  //   let sessionId = localStorage.getItem("blog_sessionId");
-  //   if (!sessionId) {
-  //     sessionId = "session_" + Math.random().toString(36).substr(2, 9);
-  //     localStorage.setItem("blog_sessionId", sessionId);
-  //   }
-  //   return sessionId;
-  // };
   const getUserId = () => {
     const userData = localStorage.getItem("user");
     console.log("Raw user data from localStorage:", userData);

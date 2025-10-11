@@ -1,9 +1,17 @@
 // controllers/blogPostController.js
 import BlogPost from "../models/BlogPost.js";
 
+// Alternative: Modify existing getAllBlogPosts
 export const getAllBlogPosts = async (req, res) => {
   try {
-    const blogPosts = await BlogPost.find();
+    let query = {};
+
+    // If user is authenticated and requesting their own posts
+    if (req.userId && req.query.myPosts === "true") {
+      query.author_id = req.userId;
+    }
+
+    const blogPosts = await BlogPost.find(query);
     res.json(blogPosts);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -71,9 +79,26 @@ export const searchBlogPosts = async (req, res) => {
   }
 };
 
+// controllers/blogPostController.js - UPDATED createBlogPost
 export const createBlogPost = async (req, res) => {
   try {
     console.log("Received data:", req.body);
+    console.log("User making request:", req.userId);
+
+    // Validate required fields
+    if (!req.body.title || !req.body.description) {
+      return res.status(400).json({
+        message: "Title and description are required",
+      });
+    }
+
+    // Get user data (you might want to fetch this from User model)
+    const currentUser = {
+      _id: req.userId,
+      name: req.body.author?.name || "Unknown Author",
+      email: req.body.author?.email || "",
+      avatar: req.body.author?.avatar || "",
+    };
 
     const blogPost = new BlogPost({
       title: req.body.title,
@@ -81,10 +106,14 @@ export const createBlogPost = async (req, res) => {
       content: req.body.content || "",
       image: req.body.image || "",
       tags: req.body.tags || [],
+      status: req.body.status || "draft", // Add status
       author: {
-        name: req.body.author.name,
-        avatar: req.body.author.avatar || `https://i.pravatar.cc/50?${req.body.author.name}`,
+        _id: currentUser._id,
+        name: currentUser.name,
+        email: currentUser.email,
+        avatar: currentUser.avatar,
       },
+      author_id: currentUser._id, // Add author_id
       views: req.body.views || 0,
       likes: req.body.likes || 0,
     });
@@ -110,9 +139,23 @@ export const createBlogPost = async (req, res) => {
   }
 };
 
+// Update blog post with status support
 export const updateBlogPost = async (req, res) => {
   try {
-    const updatedBlogPost = await BlogPost.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const { id } = req.params;
+
+    // Check if user owns this post
+    const existingPost = await BlogPost.findById(id);
+    if (!existingPost) {
+      return res.status(404).json({ message: "Blog post not found" });
+    }
+
+    if (existingPost.author_id.toString() !== req.userId.toString()) {
+      return res.status(403).json({ message: "Not authorized to update this post" });
+    }
+
+    const updatedBlogPost = await BlogPost.findByIdAndUpdate(id, req.body, { new: true, runValidators: true });
+
     res.json(updatedBlogPost);
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -411,6 +454,36 @@ export const getPopularPosts = async (req, res) => {
     res.json(popularPosts);
   } catch (error) {
     console.error("Error fetching popular posts:", error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Get posts by specific author
+export const getPostsByAuthor = async (req, res) => {
+  try {
+    const { authorId } = req.params;
+
+    const posts = await BlogPost.find({
+      author_id: authorId,
+      status: "published", // Only show published posts
+    }).sort({ createdAt: -1 });
+
+    res.json(posts);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Get user's draft posts
+export const getMyDrafts = async (req, res) => {
+  try {
+    const posts = await BlogPost.find({
+      author_id: req.userId,
+      status: "draft",
+    }).sort({ createdAt: -1 });
+
+    res.json(posts);
+  } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };

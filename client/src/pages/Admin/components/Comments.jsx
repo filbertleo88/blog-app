@@ -1,146 +1,74 @@
 // components/pages/Admin/components/Comments/Comments.jsx
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import PostDetailsModal from "./PostDetailsModal"; // Adjust the import path as needed
 
 const Comments = () => {
   const [user, setUser] = useState(null);
-  const [activeNav, setActiveNav] = useState("comments");
   const [expandedReplies, setExpandedReplies] = useState({});
   const [searchTerm, setSearchTerm] = useState("");
   const [replyingTo, setReplyingTo] = useState(null);
+  const [editingComment, setEditingComment] = useState(null);
   const [replyText, setReplyText] = useState("");
+  const [editText, setEditText] = useState("");
   const [comments, setComments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [viewingPost, setViewingPost] = useState(null);
+  const [showPostModal, setShowPostModal] = useState(false);
   const navigate = useNavigate();
 
-  // Mock comments data - now in state so we can update it
-  const initialComments = useMemo(
-    () => [
-      {
-        id: 1,
-        user: {
-          name: "Mike",
-          username: "@Mike",
-          avatar: "https://i.pravatar.cc/150?img=2",
-        },
-        date: "19th May 2025",
-        text: "Great Post",
-        replies: [],
-        post: {
-          title: "Building a Serverless API with Next.js API Routes and Node.js",
-          thumbnail: "bg-gradient-to-br from-blue-400 to-purple-500",
-        },
-      },
-      {
-        id: 2,
-        user: {
-          name: "Ben",
-          username: "@Ben",
-          avatar: "https://i.pravatar.cc/150?img=3",
-        },
-        date: "21st May 2025",
-        text: "Nice Post",
-        replies: [
-          {
-            id: 21,
-            user: {
-              name: "Mike",
-              username: "@Mike",
-              avatar: "https://i.pravatar.cc/150?img=2",
-            },
-            date: "22nd May 2025",
-            text: "Thanks Ben!",
-            replies: [],
-          },
-        ],
-        post: {
-          title: "Building a Simple CRUD App with React, Node.js, and Express",
-          thumbnail: "bg-gradient-to-br from-green-400 to-blue-500",
-        },
-      },
-      {
-        id: 3,
-        user: {
-          name: "Emma",
-          username: "@Emma",
-          avatar: "https://i.pravatar.cc/150?img=4",
-        },
-        date: "22nd May 2025",
-        text: "Great Tutorial! I was able to follow along and build my own basic app. Thanks!",
-        replies: [
-          {
-            id: 31,
-            user: {
-              name: "Mike",
-              username: "@Mike",
-              avatar: "https://i.pravatar.cc/150?img=2",
-            },
-            date: "23rd May 2025",
-            text: "Awesome to hear that Emma!",
-            replies: [],
-          },
-        ],
-        post: {
-          title: "Building a Simple CRUD App with React, Node.js, and Express",
-          thumbnail: "bg-gradient-to-br from-orange-400 to-pink-500",
-        },
-      },
-      {
-        id: 4,
-        user: {
-          name: "Olivia",
-          username: "@Olivia",
-          avatar: "https://i.pravatar.cc/150?img=5",
-        },
-        date: "22nd May 2025",
-        text: "Super helpful!",
-        replies: [
-          {
-            id: 41,
-            user: {
-              name: "Mike",
-              username: "@Mike",
-              avatar: "https://i.pravatar.cc/150?img=2",
-            },
-            date: "27th May 2025",
-            text: "Thanks for the feedback, Olivia! Glad you found it helpful!",
-            replies: [],
-          },
-        ],
-        post: {
-          title: "Mastering Server-Side Rendering (SSR) in Next.js for Improved SEO",
-          thumbnail: "bg-gradient-to-br from-purple-400 to-pink-500",
-        },
-      },
-      {
-        id: 5,
-        user: {
-          name: "Lilly",
-          username: "@Lilly",
-          avatar: "https://i.pravatar.cc/150?img=6",
-        },
-        date: "22nd May 2025",
-        text: "Could you explain how to add validation to the form inputs?",
-        replies: [
-          {
-            id: 51,
-            user: {
-              name: "Mike",
-              username: "@Mike",
-              avatar: "https://i.pravatar.cc/150?img=2",
-            },
-            date: "23rd May 2025",
-            text: "Sure! I'll create a follow-up post about form validation next week.",
-            replies: [],
-          },
-        ],
-        post: {
-          title: "Building a Simple CRUD App with React, Node.js, and Express",
-          thumbnail: "bg-gradient-to-br from-orange-400 to-pink-500",
-        },
-      },
-    ],
-    []
-  );
+  // Fetch comments from backend
+  const fetchComments = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await fetch("http://localhost:5009/api/blogposts");
+      if (!response.ok) {
+        throw new Error("Failed to fetch blog posts");
+      }
+
+      const posts = await response.json();
+
+      // Fetch comments for each post
+      const allComments = [];
+      for (const post of posts) {
+        try {
+          const commentsResponse = await fetch(`http://localhost:5009/api/comments/post/${post._id}`);
+          if (commentsResponse.ok) {
+            const postComments = await commentsResponse.json();
+            // Add post information to each comment
+            const commentsWithPostInfo = postComments.map((comment) => ({
+              ...comment,
+              post: {
+                _id: post._id,
+                title: post.title,
+                description: post.description,
+                image: post.image || "https://source.unsplash.com/random/800x400/?blog",
+                tags: post.tags || [],
+                createdAt: post.createdAt,
+                status: post.status || "published",
+                views: post.views || 0,
+                likes: post.likes || 0,
+                content: post.content || "",
+              },
+            }));
+            allComments.push(...commentsWithPostInfo);
+          }
+        } catch (error) {
+          console.error(`Error fetching comments for post ${post._id}:`, error);
+        }
+      }
+
+      setComments(allComments);
+    } catch (error) {
+      console.error("Error fetching comments:", error);
+      setError("Failed to load comments");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     const userData = localStorage.getItem("user");
@@ -149,14 +77,14 @@ const Comments = () => {
       return;
     }
     setUser(JSON.parse(userData));
-    setComments(initialComments);
-  }, [navigate, initialComments]);
+    fetchComments();
+  }, [navigate]);
 
   // Use useMemo for filtered comments
   const filteredComments = useMemo(() => {
     if (searchTerm) {
       return comments.filter(
-        (comment) => comment.user.username.toLowerCase().includes(searchTerm.toLowerCase()) || comment.text.toLowerCase().includes(searchTerm.toLowerCase()) || comment.post.title.toLowerCase().includes(searchTerm.toLowerCase())
+        (comment) => comment.user.toLowerCase().includes(searchTerm.toLowerCase()) || comment.text.toLowerCase().includes(searchTerm.toLowerCase()) || (comment.post && comment.post.title.toLowerCase().includes(searchTerm.toLowerCase()))
       );
     }
     return comments;
@@ -169,11 +97,78 @@ const Comments = () => {
     }));
   };
 
-  const handleDeleteComment = (commentId) => {
-    if (window.confirm("Are you sure you want to delete this comment?")) {
+  const handleDeleteComment = async (commentId) => {
+    if (!window.confirm("Are you sure you want to delete this comment?")) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`http://localhost:5009/api/comments/${commentId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete comment");
+      }
+
       // Remove comment from state
-      const updatedComments = comments.filter((comment) => comment.id !== commentId);
-      setComments(updatedComments);
+      setComments((prev) => prev.filter((comment) => comment._id !== commentId));
+
+      // Show success message
+      alert("Comment deleted successfully");
+    } catch (error) {
+      console.error("Error deleting comment:", error);
+      alert("Failed to delete comment");
+    }
+  };
+
+  const handleEditComment = (comment) => {
+    setEditingComment(comment._id);
+    setEditText(comment.text);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingComment(null);
+    setEditText("");
+  };
+
+  const handleUpdateComment = async (commentId) => {
+    if (!editText.trim()) {
+      alert("Please enter comment text");
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`http://localhost:5009/api/comments/${commentId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ text: editText }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update comment");
+      }
+
+      const updatedComment = await response.json();
+
+      // Update comments state
+      setComments((prev) => prev.map((comment) => (comment._id === commentId ? updatedComment : comment)));
+
+      setEditingComment(null);
+      setEditText("");
+      alert("Comment updated successfully");
+    } catch (error) {
+      console.error("Error updating comment:", error);
+      alert("Failed to update comment");
     }
   };
 
@@ -191,79 +186,134 @@ const Comments = () => {
     setReplyText("");
   };
 
-  const handleSubmitReply = (commentId) => {
+  const handleSubmitReply = async (commentId) => {
     if (!replyText.trim()) {
       alert("Please enter a reply message");
       return;
     }
 
-    // Generate a new reply ID (in a real app, this would come from the backend)
-    const newReplyId = Date.now();
+    try {
+      const token = localStorage.getItem("token");
+      const currentUser = JSON.parse(localStorage.getItem("user"));
 
-    // Create the new reply object
-    const newReply = {
-      id: newReplyId,
-      user: {
-        name: "Admin", // Assuming the current user is admin
-        username: "@Admin",
-        avatar: "https://i.pravatar.cc/150?img=1",
-      },
-      date: new Date()
-        .toLocaleDateString("en-GB", {
-          day: "numeric",
-          month: "long",
-          year: "numeric",
-        })
-        .replace(/(\d+)/, (match) => {
-          // Add ordinal suffix
-          const day = parseInt(match);
-          if (day > 3 && day < 21) return day + "th";
-          switch (day % 10) {
-            case 1:
-              return day + "st";
-            case 2:
-              return day + "nd";
-            case 3:
-              return day + "rd";
-            default:
-              return day + "th";
-          }
-        }),
-      text: replyText,
-      replies: [],
-    };
-
-    // Update comments with the new reply
-    const updatedComments = comments.map((comment) => {
-      if (comment.id === commentId) {
-        return {
-          ...comment,
-          replies: [...comment.replies, newReply],
-        };
+      // Find the parent comment to get postId
+      const parentComment = comments.find((comment) => comment._id === commentId);
+      if (!parentComment) {
+        throw new Error("Parent comment not found");
       }
-      return comment;
-    });
 
-    setComments(updatedComments);
-    setReplyingTo(null);
-    setReplyText("");
+      const replyData = {
+        postId: parentComment.postId || parentComment.post._id,
+        user: currentUser.name || "Admin",
+        text: replyText,
+        avatar: currentUser.avatar || "https://i.pravatar.cc/50?img=1",
+        parentId: commentId,
+      };
 
-    // Auto-expand replies for the commented post
-    setExpandedReplies((prev) => ({
-      ...prev,
-      [commentId]: true,
-    }));
+      const response = await fetch("http://localhost:5009/api/comments", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(replyData),
+      });
 
-    // In a real application, you would send the reply to your backend here
-    console.log("Reply submitted:", newReply);
+      if (!response.ok) {
+        throw new Error("Failed to submit reply");
+      }
+
+      const newReply = await response.json();
+
+      // Update comments state with the new reply
+      setComments((prev) => prev.map((comment) => (comment._id === commentId ? { ...comment, replies: [...(comment.replies || []), newReply] } : comment)));
+
+      setReplyingTo(null);
+      setReplyText("");
+
+      // Auto-expand replies for the commented post
+      setExpandedReplies((prev) => ({
+        ...prev,
+        [commentId]: true,
+      }));
+
+      alert("Reply submitted successfully");
+    } catch (error) {
+      console.error("Error submitting reply:", error);
+      alert("Failed to submit reply");
+    }
+  };
+
+  const handleViewPost = (post) => {
+    setViewingPost(post);
+    setShowPostModal(true);
+  };
+
+  const handleViewOnSite = (post) => {
+    if (post.status === "published") {
+      window.open(`/blogposts/${post._id}`, "_blank");
+    } else {
+      alert("This post is still a draft and not publicly available.");
+    }
+  };
+
+  const handleEditPost = (post) => {
+    // Navigate to edit post page or open edit modal
+    console.log("Edit post:", post);
+    alert(`Edit post: ${post.title}`);
   };
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
   };
 
+  // Format date function
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const day = date.getDate();
+    const month = date.toLocaleDateString("en-US", { month: "long" });
+    const year = date.getFullYear();
+
+    // Add ordinal suffix
+    const getOrdinalSuffix = (n) => {
+      if (n > 3 && n < 21) return "th";
+      switch (n % 10) {
+        case 1:
+          return "st";
+        case 2:
+          return "nd";
+        case 3:
+          return "rd";
+        default:
+          return "th";
+      }
+    };
+
+    return `${day}${getOrdinalSuffix(day)} ${month} ${year}`;
+  };
+
+  const getTimeAgo = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInSeconds = Math.floor((now - date) / 1000);
+
+    if (diffInSeconds < 60) return "just now";
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+    if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
+    return formatDate(dateString);
+  };
+
   const renderComment = (comment, level = 0, isReply = false) => (
-    <div key={comment.id} className={`bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200 ${level > 0 ? "ml-8 border-l-4 border-l-blue-100 bg-blue-50/30" : ""} ${isReply ? "mt-4" : ""}`}>
+    <div
+      key={comment._id}
+      className={`
+        bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200 
+        transform hover:-translate-y-0.5
+        ${level > 0 ? "ml-8 border-l-4 border-l-blue-100 bg-blue-50/30" : ""} 
+        ${isReply ? "mt-4" : ""}
+      `}
+    >
       <div className="p-6">
         <div className="flex flex-col lg:flex-row lg:items-start gap-6">
           {/* Comment Content */}
@@ -271,88 +321,138 @@ const Comments = () => {
             <div className="flex items-start gap-4">
               {/* User Avatar */}
               <div className="flex-shrink-0">
-                <img src={comment.user.avatar} alt={comment.user.name} className="w-12 h-12 rounded-full border-2 border-white shadow-md" />
+                <img src={comment.avatar || "https://i.pravatar.cc/50?img=7"} alt={comment.user} className="w-12 h-12 rounded-full border-2 border-white shadow-md hover:scale-105 transition-transform duration-200" />
               </div>
 
               {/* Comment Details */}
               <div className="flex-1 min-w-0">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
                   <div className="flex items-center gap-3 flex-wrap">
-                    <h4 className="font-bold text-gray-800 text-lg">{comment.user.username}</h4>
-                    <span className="text-sm text-gray-500">• {comment.date}</span>
+                    <h4 className="font-bold text-gray-800 text-lg hover:text-blue-600 transition-colors cursor-pointer">@{comment.user}</h4>
+                    <span className="text-sm text-gray-500" title={formatDate(comment.createdAt)}>
+                      {getTimeAgo(comment.createdAt)}
+                    </span>
                   </div>
                 </div>
 
-                <p className="text-gray-700 leading-relaxed mb-4 text-base">{comment.text}</p>
-
-                {/* Reply Form */}
-                {replyingTo === comment.id && (
-                  <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                {/* Edit Mode */}
+                {editingComment === comment._id ? (
+                  <div className="mb-4">
                     <textarea
-                      value={replyText}
-                      onChange={(e) => setReplyText(e.target.value)}
-                      placeholder="Type your reply here..."
+                      value={editText}
+                      onChange={(e) => setEditText(e.target.value)}
                       className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                       rows="3"
                     />
                     <div className="flex gap-2 mt-3">
-                      <button onClick={() => handleSubmitReply(comment.id)} className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors text-sm font-medium">
-                        Submit Reply
+                      <button onClick={() => handleUpdateComment(comment._id)} className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors text-sm font-medium">
+                        Save
                       </button>
-                      <button onClick={handleCancelReply} className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors text-sm font-medium">
+                      <button onClick={handleCancelEdit} className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors text-sm font-medium">
                         Cancel
                       </button>
                     </div>
                   </div>
+                ) : (
+                  <>
+                    <p className="text-gray-700 leading-relaxed mb-4 text-base bg-gray-50 p-3 rounded-lg border border-gray-200">{comment.text}</p>
+
+                    {/* Reply Form */}
+                    {replyingTo === comment._id && (
+                      <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                        <textarea
+                          value={replyText}
+                          onChange={(e) => setReplyText(e.target.value)}
+                          placeholder="Type your reply here..."
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                          rows="3"
+                        />
+                        <div className="flex gap-2 mt-3">
+                          <button onClick={() => handleSubmitReply(comment._id)} className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors text-sm font-medium">
+                            Submit Reply
+                          </button>
+                          <button onClick={handleCancelReply} className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors text-sm font-medium">
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
 
                 {/* Action Buttons */}
-                <div className="flex items-center gap-3 flex-wrap">
-                  {!isReply && (
-                    <>
-                      <button type="button" onClick={(e) => handleReply(comment.id, e)} className="flex items-center gap-2 px-4 py-2 bg-gray-50 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors text-sm font-medium">
+                {editingComment !== comment._id && (
+                  <div className="flex items-center gap-3 flex-wrap">
+                    {!isReply && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={(e) => handleReply(comment._id, e)}
+                          className="flex items-center gap-2 px-4 py-2 bg-gray-50 text-gray-700 rounded-lg hover:bg-gray-100 hover:text-blue-600 transition-colors text-sm font-medium"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                          </svg>
+                          Reply
+                        </button>
+
+                        {comment.replies && comment.replies.length > 0 && (
+                          <button type="button" onClick={() => toggleReplies(comment._id)} className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors text-sm font-medium">
+                            <svg className={`w-4 h-4 transition-transform ${expandedReplies[comment._id] ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                            {comment.replies.length} {comment.replies.length === 1 ? "reply" : "replies"}
+                          </button>
+                        )}
+                      </>
+                    )}
+
+                    <div className="flex items-center gap-2 ml-auto">
+                      <button type="button" onClick={() => handleEditComment(comment)} className="flex items-center gap-2 px-4 py-2 bg-yellow-50 text-yellow-600 rounded-lg hover:bg-yellow-100 transition-colors text-sm font-medium">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                         </svg>
-                        Reply
+                        Edit
                       </button>
 
-                      <button type="button" onClick={() => toggleReplies(comment.id)} className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors text-sm font-medium">
-                        <svg className={`w-4 h-4 transition-transform ${expandedReplies[comment.id] ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteComment(comment._id)}
+                        className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 hover:text-white hover:bg-red-500 transition-colors text-sm font-medium"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                         </svg>
-                        {comment.replies.length} {comment.replies.length === 1 ? "reply" : "replies"}
+                        Delete
                       </button>
-                    </>
-                  )}
-
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteComment(comment.id)}
-                    className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 hover:text-white hover:bg-red-500 transition-colors text-sm font-medium ml-auto"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                    Delete
-                  </button>
-                </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Nested Replies */}
-            {expandedReplies[comment.id] && comment.replies.length > 0 && <div className="mt-6 space-y-4">{comment.replies.map((reply) => renderComment(reply, level + 1, true))}</div>}
+            {expandedReplies[comment._id] && comment.replies && comment.replies.length > 0 && <div className="mt-6 space-y-4">{comment.replies.map((reply) => renderComment(reply, level + 1, true))}</div>}
           </div>
 
           {/* Post Reference - Only show for top-level comments */}
-          {!isReply && (
+          {!isReply && comment.post && (
             <div className="lg:w-80 flex-shrink-0">
-              <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-4 border border-gray-200 hover:border-gray-300 transition-colors">
+              <div
+                className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-4 border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all duration-200 cursor-pointer group"
+                onClick={() => handleViewPost(comment.post)}
+              >
                 <div className="flex items-start gap-3">
-                  <div className={`w-12 h-12 rounded-xl ${comment.post.thumbnail} flex items-center justify-center text-white text-lg flex-shrink-0 shadow-md`}>📝</div>
+                  {comment.post.image && <img src={comment.post.image} alt={comment.post.title} className="w-12 h-12 rounded-xl object-cover flex-shrink-0 shadow-md group-hover:scale-105 transition-transform duration-200" />}
                   <div className="min-w-0 flex-1">
-                    <h5 className="text-sm font-semibold text-gray-800 leading-tight line-clamp-3 mb-1">{comment.post.title}</h5>
-                    <p className="text-xs text-gray-500">Related Post</p>
+                    <h5 className="text-sm font-semibold text-gray-800 leading-tight line-clamp-2 mb-1 group-hover:text-blue-600 transition-colors">{comment.post.title}</h5>
+                    <p className="text-xs text-gray-500 line-clamp-2 mb-2">{comment.post.description}</p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-blue-600 font-medium">View Post</span>
+                      <svg className="w-4 h-4 text-gray-400 group-hover:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -369,6 +469,34 @@ const Comments = () => {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="flex-1 p-6 lg:p-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading comments...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex-1 p-6 lg:p-8">
+        <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
+          <div className="text-red-500 text-4xl mb-4">⚠️</div>
+          <h3 className="text-lg font-semibold text-red-800 mb-2">Error Loading Comments</h3>
+          <p className="text-red-600 mb-4">{error}</p>
+          <button onClick={fetchComments} className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors">
+            Try Again
+          </button>
         </div>
       </div>
     );
@@ -402,34 +530,52 @@ const Comments = () => {
         </div>
 
         {/* Stats Summary */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="bg-white rounded-xl p-4 border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Total Comments</p>
-                <p className="text-2xl font-bold text-gray-800 mt-1">{comments.length}</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+          {[
+            {
+              label: "Total Comments",
+              value: comments.length,
+              icon: "💬",
+              description: "All comments across posts",
+              color: "from-blue-500 to-cyan-500",
+            },
+            {
+              label: "Total Replies",
+              value: comments.reduce((acc, comment) => acc + (comment.replies ? comment.replies.length : 0), 0),
+              icon: "↩️",
+              description: "Replies to comments",
+              color: "from-green-500 to-emerald-500",
+            },
+            {
+              label: "Active Posts",
+              value: new Set(comments.filter((c) => c.post).map((c) => c.post.title)).size,
+              icon: "📝",
+              description: "Posts with comments",
+              color: "from-purple-500 to-pink-500",
+            },
+            {
+              label: "Today",
+              value: comments.filter((c) => {
+                const commentDate = new Date(c.createdAt).toDateString();
+                const today = new Date().toDateString();
+                return commentDate === today;
+              }).length,
+              icon: "🕒",
+              description: "Comments today",
+              color: "from-red-500 to-orange-500",
+            },
+          ].map((stat, index) => (
+            <div key={index} className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100 hover:shadow-md transition-all duration-300 transform hover:-translate-y-1">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-600 text-sm font-medium">{stat.label}</p>
+                  <p className="text-3xl font-bold text-gray-800 mt-2">{stat.value.toLocaleString()}</p>
+                  <p className="text-xs text-gray-500 mt-1">{stat.description}</p>
+                </div>
+                <div className={`w-12 h-12 bg-gradient-to-br ${stat.color} rounded-full flex items-center justify-center text-white text-xl`}>{stat.icon}</div>
               </div>
-              <div className="text-2xl text-blue-500">💬</div>
             </div>
-          </div>
-          <div className="bg-white rounded-xl p-4 border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Replies</p>
-                <p className="text-2xl font-bold text-gray-800 mt-1">{comments.reduce((acc, comment) => acc + comment.replies.length, 0)}</p>
-              </div>
-              <div className="text-2xl text-green-500">↩️</div>
-            </div>
-          </div>
-          <div className="bg-white rounded-xl p-4 border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Active Posts</p>
-                <p className="text-2xl font-bold text-gray-800 mt-1">{new Set(comments.map((comment) => comment.post.title)).size}</p>
-              </div>
-              <div className="text-2xl text-purple-500">📝</div>
-            </div>
-          </div>
+          ))}
         </div>
       </div>
 
@@ -449,6 +595,9 @@ const Comments = () => {
           )}
         </div>
       )}
+
+      {/* PostDetailsModal */}
+      <PostDetailsModal post={viewingPost} isOpen={showPostModal} onClose={() => setShowPostModal(false)} onEdit={handleEditPost} onViewOnSite={handleViewOnSite} />
     </div>
   );
 };

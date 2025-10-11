@@ -1,16 +1,16 @@
 // components/pages/Admin/components/BlogPosts/PostModal.jsx
 import React, { useState, useEffect } from "react";
 
-const PostModal = ({ isOpen, onClose, onSubmit, initialData }) => {
+const PostModal = ({ isOpen, onClose, onSubmit, initialData, currentUser }) => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [content, setContent] = useState("");
   const [tags, setTags] = useState("");
-  const [authorName, setAuthorName] = useState("");
   const [image, setImage] = useState(null);
   const [imagePreview, setImagePreview] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imageUrl, setImageUrl] = useState("");
+  const [status, setStatus] = useState("draft");
 
   // Reset form when modal opens/closes or initialData changes
   useEffect(() => {
@@ -21,19 +21,19 @@ const PostModal = ({ isOpen, onClose, onSubmit, initialData }) => {
         setDescription(initialData.description || "");
         setContent(initialData.content || "");
         setTags(initialData.tags ? initialData.tags.join(", ") : "");
-        setAuthorName(initialData.author?.name || "");
         setImageUrl(initialData.image || "");
         setImagePreview(initialData.image || "");
+        setStatus(initialData.status || "draft");
       } else {
         // Create mode - reset form
         setTitle("");
         setDescription("");
         setContent("");
         setTags("");
-        setAuthorName("");
         setImage(null);
         setImagePreview("");
         setImageUrl("");
+        setStatus("draft");
       }
     }
   }, [isOpen, initialData]);
@@ -87,7 +87,7 @@ const PostModal = ({ isOpen, onClose, onSubmit, initialData }) => {
     }
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e, submitStatus = status) => {
     e.preventDefault();
 
     // Basic validation
@@ -98,11 +98,6 @@ const PostModal = ({ isOpen, onClose, onSubmit, initialData }) => {
 
     if (!description || description.length < 20) {
       alert("Description is required and must be at least 20 characters");
-      return;
-    }
-
-    if (!authorName) {
-      alert("Author name is required");
       return;
     }
 
@@ -125,9 +120,7 @@ const PostModal = ({ isOpen, onClose, onSubmit, initialData }) => {
       const postData = {
         title: title.trim(),
         description: description.trim(),
-        author: {
-          name: authorName.trim(),
-        },
+        status: submitStatus,
       };
 
       // Add optional fields only if they have values
@@ -151,6 +144,14 @@ const PostModal = ({ isOpen, onClose, onSubmit, initialData }) => {
     }
   };
 
+  const handlePublish = (e) => {
+    handleSubmit(e, "published");
+  };
+
+  const handleSaveDraft = (e) => {
+    handleSubmit(e, "draft");
+  };
+
   const handleClose = () => {
     onClose();
   };
@@ -162,11 +163,28 @@ const PostModal = ({ isOpen, onClose, onSubmit, initialData }) => {
     }
   };
 
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 transition-opacity duration-300" onClick={handleBackdropClick}>
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto transform transition-transform duration-300">
+    <div className="fixed inset-0 flex items-center justify-center z-50 p-4 transition-opacity duration-300" onClick={handleBackdropClick}>
+      {/* Blurry Backdrop */}
+      <div className="absolute inset-0 bg-gray-900/20 backdrop-blur-sm transition-all duration-300"></div>
+
+      {/* Modal Content */}
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto transform transition-all duration-300 scale-100 relative z-10">
         {/* Header with Close Button */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-white rounded-t-xl sticky top-0 z-10">
           <h3 className="text-2xl font-bold text-gray-800">{initialData ? "Edit Post" : "Add a New Post"}</h3>
@@ -176,6 +194,18 @@ const PostModal = ({ isOpen, onClose, onSubmit, initialData }) => {
             </svg>
           </button>
         </div>
+
+        {/* Author Info Display */}
+        {currentUser && (
+          <div className="px-6 pt-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <p className="text-sm text-blue-800">
+                <strong>Author:</strong> {currentUser.name || currentUser.username}
+                {currentUser.email && ` (${currentUser.email})`}
+              </p>
+            </div>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="p-6">
           {/* Image Upload Section */}
@@ -232,28 +262,15 @@ const PostModal = ({ isOpen, onClose, onSubmit, initialData }) => {
           </div>
 
           {/* Required Fields */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div>
-              <label className="block text-gray-700 text-sm font-semibold mb-2">Title *</label>
-              <input
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-gray-700 text-sm font-semibold mb-2">Author Name *</label>
-              <input
-                type="text"
-                value={authorName}
-                onChange={(e) => setAuthorName(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                required
-              />
-            </div>
+          <div className="mb-4">
+            <label className="block text-gray-700 text-sm font-semibold mb-2">Title *</label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+              required
+            />
           </div>
 
           <div className="mb-4">
@@ -290,32 +307,74 @@ const PostModal = ({ isOpen, onClose, onSubmit, initialData }) => {
           </div>
 
           {/* Footer Buttons */}
-          <div className="flex justify-end space-x-4 pt-4 border-t border-gray-200">
+          <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+            {/* Cancel Button */}
             <button
               type="button"
               onClick={handleClose}
               disabled={isSubmitting}
-              className="px-6 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:opacity-50 transition-all duration-200 font-medium"
+              className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-50 text-gray-600 rounded-xl hover:bg-gray-100 transition-colors text-sm font-medium disabled:opacity-50"
             >
-              Cancel
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              <span>Cancel</span>
             </button>
+
+            {/* Save as Draft Button */}
             <button
-              type="submit"
+              type="button"
+              onClick={handleSaveDraft}
               disabled={isSubmitting}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 transition-all duration-200 font-medium flex items-center"
+              className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors text-sm font-medium disabled:opacity-50"
             >
               {isSubmitting ? (
                 <>
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                  <svg className="animate-spin h-4 w-4 text-gray-600" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  {initialData ? "Updating..." : "Creating..."}
+                  <span>Saving...</span>
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                  </svg>
+                  <span>Save as Draft</span>
+                </>
+              )}
+            </button>
+
+            {/* Publish Button */}
+            <button
+              type="button"
+              onClick={handlePublish}
+              disabled={isSubmitting}
+              className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-colors text-sm font-medium disabled:opacity-50"
+            >
+              {isSubmitting ? (
+                <>
+                  <svg className="animate-spin h-4 w-4 text-blue-600" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span>Publishing...</span>
                 </>
               ) : initialData ? (
-                "Update Post"
+                <>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  <span>Update Post</span>
+                </>
               ) : (
-                "Create Post"
+                <>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+                  </svg>
+                  <span>Publish</span>
+                </>
               )}
             </button>
           </div>

@@ -29,6 +29,11 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "", // Set as empty string by default
     },
+    authProvider: {
+      type: String,
+      enum: ["email", "google"],
+      default: "email",
+    },
     role: {
       type: String,
       enum: ["user", "admin"],
@@ -59,6 +64,9 @@ userSchema.pre("save", async function (next) {
 
 // Compare password method
 userSchema.methods.comparePassword = async function (candidatePassword) {
+  if (!this.password) {
+    throw new Error("No password set for this user");
+  }
   return await bcrypt.compare(candidatePassword, this.password);
 };
 

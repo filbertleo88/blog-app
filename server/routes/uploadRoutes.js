@@ -1,4 +1,3 @@
-
 // routes/uploadRoutes.js - Make sure this is working
 import express from "express";
 import upload from "../middleware/upload.js";

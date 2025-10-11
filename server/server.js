@@ -1,69 +1,3 @@
-// import express from "express";
-// import dotenv from "dotenv";
-// import cors from "cors";
-// import connectDB from "./config/db.js";
-// import userRoutes from "./routes/userRoutes.js";
-// import blogPostRoutes from "./routes/blogPostsRoutes.js";
-// import commentRoutes from "./routes/commentRoutes.js";
-// import uploadRoutes from "./routes/uploadRoutes.js";
-// import passport from "passport";
-// import { jwtStrategy } from "./config/passport.js";
-// import { googleStrategy } from "./config/googleOAuth.js";
-// import authRoutes from "./routes/authRoutes.js";
-// import cookieParser from "cookie-parser";
-// import session from "express-session";
-
-// const app = express();
-
-// import path from "path"; // Add this import
-// import { fileURLToPath } from "url"; // Add this import for ES modules
-
-// // Fix for ES modules __dirname
-// const __filename = fileURLToPath(import.meta.url);
-// const __dirname = path.dirname(__filename);
-
-// dotenv.config();
-
-// connectDB();
-
-// // Passport configuration
-// app.use(passport.initialize());
-// app.use(passport.session()); // Add this for session support
-// passport.authenticate("google", { session: false });
-// passport.use(jwtStrategy);
-// passport.use(googleStrategy);
-
-// // Middleware
-// app.use(cors());
-// app.use(express.json());
-// app.use(cookieParser());
-
-// // Routes
-// app.use("/api/users", userRoutes);
-// app.use("/api/blogposts", blogPostRoutes);
-// app.use("/api/comments", commentRoutes);
-// app.use("/api/upload", uploadRoutes);
-// app.use("/api/auth", authRoutes);
-// // Serve static files from uploads directory
-// app.use("/uploads", express.static(path.join(__dirname, "uploads")));
-
-// // Session configuration
-// app.use(
-//   session({
-//     secret: process.env.SESSION_SECRET || "your-session-secret",
-//     resave: false,
-//     saveUninitialized: false,
-//     cookie: {
-//       secure: process.env.NODE_ENV === "production",
-//       maxAge: 24 * 60 * 60 * 1000, // 24 hours
-//     },
-//   })
-// );
-
-// const PORT = process.env.PORT || 5009;
-
-// app.listen(PORT, console.log(`Server running on port ${PORT}`));
-
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
@@ -136,8 +70,10 @@ app.use(
     credentials: true,
   })
 );
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+
+// ⚠️ FIX: INCREASE PAYLOAD SIZE LIMIT - Add this BEFORE your routes
+app.use(express.json({ limit: "50mb" })); // Increase to 50MB
+app.use(express.urlencoded({ limit: "50mb", extended: true }));
 app.use(cookieParser());
 
 // Serve static files from uploads directory

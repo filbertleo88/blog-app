@@ -49,18 +49,26 @@ const Sidebar = () => {
 
         console.log(
           "Sidebar - Raw posts:",
-          postsData.map((p) => ({ title: p.title, date: p.date }))
+          postsData.map((p) => ({ title: p.title, date: p.date, status: p.status }))
+        ); // Debug
+
+        // Filter only published posts
+        const publishedPosts = postsData.filter((post) => post.status === "published");
+
+        console.log(
+          "Sidebar - Published posts:",
+          publishedPosts.map((p) => ({ title: p.title, date: p.date, status: p.status }))
         ); // Debug
 
         // Sort by date (newest first) using the custom parser
-        const sortedPosts = postsData.sort((a, b) => {
+        const sortedPosts = publishedPosts.sort((a, b) => {
           const dateA = parseDate(a.date);
           const dateB = parseDate(b.date);
           return dateB - dateA; // Newest first
         });
 
         console.log(
-          "Sidebar - Sorted posts:",
+          "Sidebar - Sorted published posts:",
           sortedPosts.map((p) => ({ title: p.title, date: p.date }))
         ); // Debug
 
@@ -109,7 +117,7 @@ const Sidebar = () => {
             <div className="flex items-start gap-3 mb-4">
               <div className="relative flex-shrink-0">
                 <img src={post.image || `https://source.unsplash.com/150x150/?${post.tags?.[0] || "tech"}`} alt={post.title} className="w-14 h-14 object-cover rounded-lg" />
-                {index === 0 && <span className="absolute -top-1 -right-1 bg-sky-500 text-white text-xs px-1 rounded-full">NEW</span>}
+                {index === 0 && recentPosts.length > 1 && <span className="absolute -top-1 -right-1 bg-sky-500 text-white text-xs px-1 rounded-full">NEW</span>}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-gray-800 group-hover:text-sky-500 transition line-clamp-2 leading-tight mb-1">{post.title}</p>
@@ -126,7 +134,9 @@ const Sidebar = () => {
 
       {recentPosts.length === 0 && (
         <div className="text-center py-4 text-gray-500">
-          <p className="text-sm">No posts available</p>
+          <div className="text-3xl mb-2">📝</div>
+          <p className="text-sm">No published posts yet</p>
+          <p className="text-xs text-gray-400 mt-1">Check back later</p>
         </div>
       )}
     </aside>
