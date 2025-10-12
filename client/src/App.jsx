@@ -15,6 +15,7 @@ import Comments from "./pages/Admin/components/Comments";
 import DashboardLayout from "./components/Layouts/BlogLayout/DashboardLayout";
 import ScrollToTop from "./components/ScrollToTop";
 import BlogLayout from "./components/Layouts/BlogLayout/BlogLayout";
+import { AuthProvider } from "./contexts/AuthContext";
 
 const App = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -100,7 +101,7 @@ const App = () => {
     console.log("✅ Auth success callback, user data:", userData);
     setUser(userData);
     setIsAuthModalOpen(false);
-    toast.success(`Welcome to Time To Program, ${userData.name}! 🎉`);
+    toast.success(`Welcome to Inkspire, ${userData.name}! 🎉`);
   };
 
   const handleFormSubmit = async (postData) => {
@@ -118,12 +119,14 @@ const App = () => {
       const postWithAuthor = {
         ...postData,
         author: {
-          _id: user.id, // Use user.id
+          _id: user.id || user._id, // Try both id and _id
           name: user.name,
           email: user.email,
           avatar: user.avatar,
         },
       };
+
+      console.log("Final data being sent to API:", postWithAuthor);
 
       const response = await fetch("http://localhost:5009/api/blogposts", {
         method: "POST",
@@ -134,12 +137,25 @@ const App = () => {
         body: JSON.stringify(postWithAuthor),
       });
 
+      console.log("Response status:", response.status);
+      console.log("Response headers:", response.headers);
+
       if (!response.ok) {
-        const errorData = await response.json();
+        let errorData;
+        try {
+          errorData = await response.json();
+          console.error("Error response data:", errorData);
+        } catch (parseError) {
+          const errorText = await response.text();
+          console.error("Error response text:", errorText);
+          throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+        }
         throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();
+      console.log("Success response:", data);
+
       toast.success("Post created successfully!");
       handleCloseModal();
 
@@ -154,6 +170,7 @@ const App = () => {
       return data;
     } catch (error) {
       console.error("Error creating post:", error);
+      console.error("Error stack:", error.stack);
       toast.error(error.message || "Failed to create post");
       throw error;
     }
@@ -198,129 +215,131 @@ const App = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Router>
-        <ScrollToTop />
-        <Routes>
-          {/* Auth Routes */}
-          <Route
-            path="/login"
-            element={
-              <BlogLayout user={user} posts={posts}>
-                <div className="min-h-screen"></div>
-              </BlogLayout>
-            }
-          />
-          <Route
-            path="/register"
-            element={
-              <BlogLayout user={user} posts={posts}>
-                <div className="min-h-screen"></div>
-              </BlogLayout>
-            }
-          />
+      <AuthProvider>
+        <Router>
+          <ScrollToTop />
+          <Routes>
+            {/* Auth Routes */}
+            <Route
+              path="/login"
+              element={
+                <BlogLayout user={user} posts={posts}>
+                  <div className="min-h-screen"></div>
+                </BlogLayout>
+              }
+            />
+            <Route
+              path="/register"
+              element={
+                <BlogLayout user={user} posts={posts}>
+                  <div className="min-h-screen"></div>
+                </BlogLayout>
+              }
+            />
 
-          {/* Blog Routes with Floating Button */}
-          <Route
-            path="/"
-            element={
-              <div className="relative">
-                <BlogLandingPage user={user} posts={posts} />
-                {user && user.id && <FloatingButton onClick={handleOpenModal} />}
-              </div>
-            }
-          />
+            {/* Blog Routes with Floating Button */}
+            <Route
+              path="/"
+              element={
+                <div className="relative">
+                  <BlogLandingPage user={user} posts={posts} />
+                  {user && user.id && <FloatingButton onClick={handleOpenModal} />}
+                </div>
+              }
+            />
 
-          <Route
-            path="/blogposts/:id"
-            element={
-              <div className="relative">
-                <BlogPostView user={user} />
-                {user && user.id && <FloatingButton onClick={handleOpenModal} />}
-              </div>
-            }
-          />
+            <Route
+              path="/blogposts/:id"
+              element={
+                <div className="relative">
+                  <BlogPostView user={user} />
+                  {user && user.id && <FloatingButton onClick={handleOpenModal} />}
+                </div>
+              }
+            />
 
-          <Route
-            path="/tag/:tag"
-            element={
-              <div className="relative">
-                <PostByTags user={user} />
-                {user && user.id && <FloatingButton onClick={handleOpenModal} />}
-              </div>
-            }
-          />
+            <Route
+              path="/tag/:tag"
+              element={
+                <div className="relative">
+                  <PostByTags user={user} />
+                  {user && user.id && <FloatingButton onClick={handleOpenModal} />}
+                </div>
+              }
+            />
 
-          <Route
-            path="/search"
-            element={
-              <div className="relative">
-                <SearchPosts user={user} />
-                {user && user.id && <FloatingButton onClick={handleOpenModal} />}
-              </div>
-            }
-          />
+            <Route
+              path="/search"
+              element={
+                <div className="relative">
+                  <SearchPosts user={user} />
+                  {user && user.id && <FloatingButton onClick={handleOpenModal} />}
+                </div>
+              }
+            />
 
-          {/* Dashboard Routes */}
-          <Route
-            path="/profile"
-            element={
-              <DashboardLayout user={user} onLoginClick={handleLoginClick} onLogout={handleLogout} posts={posts} activeNav="dashboard" onNavChange={setActiveNav} onProfileUpdate={handleProfileUpdate}>
-                <Profile user={user} onProfileUpdate={handleProfileUpdate} />
-              </DashboardLayout>
-            }
-          />
+            {/* Dashboard Routes */}
+            <Route
+              path="/profile"
+              element={
+                <DashboardLayout user={user} onLoginClick={handleLoginClick} onLogout={handleLogout} posts={posts} activeNav="dashboard" onNavChange={setActiveNav} onProfileUpdate={handleProfileUpdate}>
+                  <Profile user={user} onProfileUpdate={handleProfileUpdate} />
+                </DashboardLayout>
+              }
+            />
 
-          <Route
-            path="/blog-posts"
-            element={
-              <DashboardLayout user={user} onLoginClick={handleLoginClick} onLogout={handleLogout} posts={posts} activeNav="blog-posts" onNavChange={setActiveNav} onProfileUpdate={handleProfileUpdate}>
-                <BlogPosts user={user} />
-              </DashboardLayout>
-            }
-          />
+            <Route
+              path="/blog-posts"
+              element={
+                <DashboardLayout user={user} onLoginClick={handleLoginClick} onLogout={handleLogout} posts={posts} activeNav="blog-posts" onNavChange={setActiveNav} onProfileUpdate={handleProfileUpdate}>
+                  <BlogPosts user={user} />
+                </DashboardLayout>
+              }
+            />
 
-          <Route
-            path="/comments"
-            element={
-              <DashboardLayout user={user} onLoginClick={handleLoginClick} onLogout={handleLogout} posts={posts} activeNav="comments" onNavChange={setActiveNav} onProfileUpdate={handleProfileUpdate}>
-                <Comments user={user} />
-              </DashboardLayout>
-            }
-          />
-        </Routes>
-      </Router>
+            <Route
+              path="/comments"
+              element={
+                <DashboardLayout user={user} onLoginClick={handleLoginClick} onLogout={handleLogout} posts={posts} activeNav="comments" onNavChange={setActiveNav} onProfileUpdate={handleProfileUpdate}>
+                  <Comments user={user} />
+                </DashboardLayout>
+              }
+            />
+          </Routes>
+        </Router>
 
-      {/* Global Components */}
-      <PostModal isOpen={isModalOpen} onClose={handleCloseModal} onSubmit={handleFormSubmit} currentUser={user} />
+        {/* Global Components */}
+        <PostModal isOpen={isModalOpen} onClose={handleCloseModal} onSubmit={handleFormSubmit} currentUser={user} />
 
-      <AuthModal isVisible={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} onAuthSuccess={handleAuthSuccess} initialView="login" />
+        <AuthModal isVisible={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} onAuthSuccess={handleAuthSuccess} initialView="login" />
 
-      <Toaster
-        position="top-right"
-        toastOptions={{
-          duration: 4000,
-          className: "",
-          style: {
-            fontSize: "14px",
-            background: "#363636",
-            color: "#fff",
-          },
-          success: {
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            duration: 4000,
+            className: "",
             style: {
-              background: "#10B981",
+              fontSize: "14px",
+              background: "#363636",
+              color: "#fff",
             },
-            iconTheme: {
-              primary: "#fff",
-              secondary: "#10B981",
+            success: {
+              style: {
+                background: "#10B981",
+              },
+              iconTheme: {
+                primary: "#fff",
+                secondary: "#10B981",
+              },
             },
-          },
-          error: {
-            style: {
-              background: "#EF4444",
+            error: {
+              style: {
+                background: "#EF4444",
+              },
             },
-          },
-        }}
-      />
+          }}
+        />
+      </AuthProvider>
     </div>
   );
 };

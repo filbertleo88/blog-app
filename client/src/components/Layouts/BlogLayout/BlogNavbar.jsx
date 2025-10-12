@@ -1,42 +1,21 @@
+// components/BlogNavbar.jsx
 import React, { useState, useMemo, useEffect } from "react";
 import { HiOutlineMenu, HiOutlineX } from "react-icons/hi";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { LuSearch as MagnifyingGlassIcon } from "react-icons/lu";
-import AuthModal from "../../Auth/AuthModal"; // Adjust path as needed
+import AuthModal from "../../Auth/AuthModal";
+import { useAuth } from "../../../contexts/AuthContext"; // Add this import
 
-const BlogNavbar = ({ activeMenu, posts, user }) => {
+const BlogNavbar = ({ activeMenu, posts }) => {
+  // Remove user prop
+  const { user: currentUser, logout: authLogout } = useAuth(); // Use auth context
   const [openSideMenu, setOpenSideMenu] = useState(false);
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [currentUser, setCurrentUser] = useState(user);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [authView, setAuthView] = useState("login"); // 'login' or 'register'
+  const [authView, setAuthView] = useState("login");
   const navigate = useNavigate();
   const location = useLocation();
-
-  // Update currentUser when user prop changes
-  useEffect(() => {
-    setCurrentUser(user);
-  }, [user]);
-
-  // Also check localStorage on component mount as backup
-  useEffect(() => {
-    const userData = localStorage.getItem("user");
-    if (userData) {
-      try {
-        const parsedUser = JSON.parse(userData);
-        setCurrentUser(parsedUser);
-      } catch (error) {
-        console.error("Error parsing user data:", error);
-        // Clear invalid user data
-        localStorage.removeItem("user");
-        localStorage.removeItem("token");
-        setCurrentUser(null);
-      }
-    } else {
-      setCurrentUser(null);
-    }
-  }, []);
 
   // Handle URL changes to open modal with correct view
   useEffect(() => {
@@ -49,22 +28,18 @@ const BlogNavbar = ({ activeMenu, posts, user }) => {
     }
   }, [location.pathname]);
 
-  // Check if we're on a dashboard page (Profile, Blog Posts, Comments)
+  // Check if we're on a dashboard page
   const isDashboardPage = ["/profile", "/blog-posts", "/comments"].includes(location.pathname);
 
-  // Generate top 5 tags dynamically from posts - MOST ROBUST VERSION
+  // Generate top 5 tags dynamically from posts
   const top5Tags = useMemo(() => {
     try {
-      // Debug what we're receiving
       console.log("Raw posts data:", posts);
-
-      // Handle all possible data formats safely
       let postsArray = [];
 
       if (Array.isArray(posts)) {
         postsArray = posts;
       } else if (posts && typeof posts === "object") {
-        // Try common property names
         if (Array.isArray(posts.data)) postsArray = posts.data;
         else if (Array.isArray(posts.posts)) postsArray = posts.posts;
         else if (Array.isArray(posts.items)) postsArray = posts.items;
@@ -73,13 +48,11 @@ const BlogNavbar = ({ activeMenu, posts, user }) => {
 
       console.log("Extracted posts array:", postsArray);
 
-      // If no posts, return empty array
       if (!postsArray || !Array.isArray(postsArray) || postsArray.length === 0) {
         console.log("No posts available for tag generation");
         return [];
       }
 
-      // Collect all tags safely
       const allTags = [];
       postsArray.forEach((post) => {
         if (post && post.tags && Array.isArray(post.tags)) {
@@ -97,13 +70,11 @@ const BlogNavbar = ({ activeMenu, posts, user }) => {
         return [];
       }
 
-      // Count tag occurrences
       const tagCounts = {};
       allTags.forEach((tag) => {
         tagCounts[tag] = (tagCounts[tag] || 0) + 1;
       });
 
-      // Sort by count and get top 5
       const sortedTags = Object.keys(tagCounts).sort((a, b) => tagCounts[b] - tagCounts[a]);
       const topTags = sortedTags.slice(0, 5);
 
@@ -123,17 +94,14 @@ const BlogNavbar = ({ activeMenu, posts, user }) => {
     })),
   ];
 
-  // Safe user data getters - FIXED: Check for empty avatar
+  // Safe user data getters
   const getUserName = () => {
     if (!currentUser || !currentUser.name) return "User";
     return currentUser.name.split(" ")[0] || currentUser.name;
   };
 
   const getUserAvatar = () => {
-    // Return null or empty string if avatar is empty, null, or undefined
     if (!currentUser?.avatar) return null;
-
-    // Check if avatar is just empty string or whitespace
     const avatar = currentUser.avatar.trim();
     return avatar === "" ? null : avatar;
   };
@@ -159,15 +127,11 @@ const BlogNavbar = ({ activeMenu, posts, user }) => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    setCurrentUser(null);
+    authLogout(); // Use auth context logout
     navigate("/");
-    window.location.reload();
   };
 
   const handleAuthButtonClick = () => {
-    // Navigate to login page first, then open modal
     navigate("/login");
     setAuthView("login");
     setIsAuthModalOpen(true);
@@ -175,25 +139,20 @@ const BlogNavbar = ({ activeMenu, posts, user }) => {
 
   const handleAuthModalClose = () => {
     setIsAuthModalOpen(false);
-    // Navigate back to the page we were on before opening auth modal
-    // Check if we're currently on login/register pages
     if (location.pathname === "/login" || location.pathname === "/register") {
-      // Get the previous page from history or default to home
       const previousPath = document.referrer ? new URL(document.referrer).pathname : "/";
       navigate(previousPath);
     }
   };
 
   const handleAuthSuccess = (userData) => {
-    setCurrentUser(userData);
+    // No need to set currentUser here - AuthContext will handle it
     setIsAuthModalOpen(false);
-    // Navigate to home after successful auth
     navigate("/");
   };
 
   const handleViewSwitch = (view) => {
     setAuthView(view);
-    // Update URL when switching views
     navigate(view === "login" ? "/login" : "/register", { replace: true });
   };
 
@@ -207,9 +166,8 @@ const BlogNavbar = ({ activeMenu, posts, user }) => {
               {openSideMenu ? <HiOutlineX className="text-2xl" /> : <HiOutlineMenu className="h-6 w-6" />}
             </button>
 
-            {/* Always make logo clickable */}
             <Link to="/" className="text-2xl font-bold text-sky-600 tracking-wider hover:text-sky-700 transition-colors">
-              Time To Program
+              Inkspire
             </Link>
           </div>
 
@@ -258,14 +216,12 @@ const BlogNavbar = ({ activeMenu, posts, user }) => {
             {/* User Auth Section */}
             {currentUser ? (
               <div className="flex items-center gap-3">
-                {/* User Avatar and Name - Simplified on dashboard pages */}
                 {isDashboardPage ? (
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium text-gray-700">Welcome, {getUserName()}</span>
                   </div>
                 ) : (
                   <div className="flex items-center gap-2 bg-gray-50 rounded-full pl-2 pr-4 py-1 hover:bg-gray-100 transition-colors cursor-pointer group relative">
-                    {/* FIXED: Show placeholder when no avatar */}
                     {getUserAvatar() ? (
                       <img src={getUserAvatar()} alt={getUserName()} className="w-8 h-8 rounded-full object-cover" />
                     ) : (
@@ -332,7 +288,6 @@ const BlogNavbar = ({ activeMenu, posts, user }) => {
               {currentUser ? (
                 <div className="border-t border-gray-200 mt-4 pt-4 px-4">
                   <div className="flex items-center gap-3 mb-4">
-                    {/* FIXED: Show placeholder when no avatar in mobile menu */}
                     {getUserAvatar() ? (
                       <img src={getUserAvatar()} alt={getUserName()} className="w-10 h-10 rounded-full object-cover" />
                     ) : (

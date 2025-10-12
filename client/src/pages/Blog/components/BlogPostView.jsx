@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { Toaster, toast } from "react-hot-toast";
 import BlogLayout from "../../../components/Layouts/BlogLayout/BlogLayout";
 import ModernCommentSection from "../../../components/ModernCommentSection";
+import MarkdownRenderer from "./common/MarkdownRenderer";
 
 const BlogPostView = () => {
   const { id } = useParams();
@@ -147,7 +149,7 @@ const BlogPostView = () => {
 
     // Check authentication first
     if (!isAuthenticated()) {
-      alert("Please login to like posts");
+      toast.warning("Please login to like posts");
       redirectToAuth();
       return;
     }
@@ -179,7 +181,7 @@ const BlogPostView = () => {
         console.error("Error response:", errorData);
 
         if (response.status === 401) {
-          alert("Please login to like posts");
+          toast.warning("Please login to like posts");
           redirectToAuth();
           return;
         }
@@ -193,7 +195,7 @@ const BlogPostView = () => {
       setIsLiked(data.hasLiked);
     } catch (error) {
       console.error("Failed to update like:", error);
-      alert(error.message || "Failed to update like. Please try again.");
+      toast.error(error.message || "Failed to update like. Please try again.");
     } finally {
       setIsLiking(false);
     }
@@ -268,7 +270,16 @@ const BlogPostView = () => {
             <span className="mx-2">•</span>
             <span>{post.date || new Date(post.createdAt).toLocaleDateString()}</span>
           </div>
-          <div className="prose prose-lg max-w-none mb-8" dangerouslySetInnerHTML={{ __html: post.content || post.description }} />
+
+          {/* Post Content */}
+          <div className="mb-8">
+            <MarkdownRenderer content={post.content} className="prose-lg" />
+          </div>
+          <div className="mb-8">
+            <MarkdownRenderer content={post.description} className="text-gray-700" />
+          </div>
+
+          {/* Tags */}
           <div className="mt-8">
             {post.tags &&
               post.tags.map((tag) => (
@@ -295,7 +306,7 @@ const BlogPostView = () => {
 const FloatingPostStats = ({ likeCount, viewCount, isLiked, onLike, isLiking, isAuthenticated }) => {
   const handleLikeClick = () => {
     if (!isAuthenticated) {
-      alert("Please login to like posts");
+      toast.warning("Please login to like posts");
       return;
     }
     onLike();

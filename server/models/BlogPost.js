@@ -8,14 +8,14 @@ const blogPostSchema = new mongoose.Schema({
     trim: true,
     minlength: 5,
   },
-  description: {
-    type: String,
-    required: [true, "Description is required"],
-    minlength: 20,
-  },
   content: {
     type: String,
-    required: false,
+    required: [true, "Content is required"],
+    minlength: 20,
+  },
+  description: {
+    type: String,
+    default: "",
   },
   image: {
     type: String,

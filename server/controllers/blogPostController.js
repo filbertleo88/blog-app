@@ -1,5 +1,6 @@
 // controllers/blogPostController.js
 import BlogPost from "../models/BlogPost.js";
+import User from "../models/User.js"; // Add this import
 
 // Alternative: Modify existing getAllBlogPosts
 export const getAllBlogPosts = async (req, res) => {
@@ -79,7 +80,163 @@ export const searchBlogPosts = async (req, res) => {
   }
 };
 
-// controllers/blogPostController.js - UPDATED createBlogPost
+// Helper function to upload avatar image and get URL
+const uploadAvatarToServer = async (base64Image, userId) => {
+  try {
+    // Extract the image data from base64 string
+    const matches = base64Image.match(/^data:image\/([A-Za-z-+/]+);base64,(.+)$/);
+
+    if (!matches || matches.length !== 3) {
+      throw new Error("Invalid base64 image string");
+    }
+
+    const imageType = matches[1];
+    const imageData = matches[2];
+    const buffer = Buffer.from(imageData, "base64");
+
+    // Create form data for upload
+    const formData = new FormData();
+    const blob = new Blob([buffer], { type: `image/${imageType}` });
+    formData.append("image", blob, `avatar-${userId}-${Date.now()}.${imageType}`);
+
+    // Upload to your server
+    const response = await fetch("http://localhost:5009/api/upload", {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to upload avatar");
+    }
+
+    const data = await response.json();
+    return data.imageUrl; // This should be the URL of the uploaded image
+  } catch (error) {
+    console.error("Error uploading avatar:", error);
+    throw error;
+  }
+};
+
+// // Updated createBlogPost function
+// export const createBlogPost = async (req, res) => {
+//   try {
+//     console.log("Received data:", req.body);
+//     console.log("User making request:", req.userId);
+
+//     // Validate required fields
+//     if (!req.body.title || !req.body.content) {
+//       return res.status(400).json({
+//         message: "Title and content are required",
+//       });
+//     }
+
+//     // Fetch user data from User model to get avatar URL
+//     let currentUser = null;
+//     try {
+//       currentUser = await User.findById(req.userId);
+//       if (!currentUser) {
+//         console.log("User not found, using default values");
+//       }
+//     } catch (userError) {
+//       console.log("Error fetching user:", userError);
+//     }
+
+//     // Prepare author data
+//     let authorData = {
+//       _id: req.userId || req.user._id,
+//       name: currentUser?.name || req.body.author?.name || "Unknown Author",
+//       email: currentUser?.email || req.body.author?.email || "",
+//       avatar: currentUser?.avatar || "", // Start with user's existing avatar URL
+//     };
+
+//     // If new avatar is provided as base64, upload it and get URL
+//     if (req.body.author?.avatar && req.body.author.avatar.startsWith("data:image")) {
+//       console.log("Base64 avatar detected - uploading to server...");
+//       try {
+//         const avatarUrl = await uploadAvatarToServer(req.body.author.avatar, req.userId);
+//         authorData.avatar = avatarUrl;
+//         console.log("Avatar uploaded successfully:", avatarUrl);
+//       } catch (uploadError) {
+//         console.error("Failed to upload avatar, using default:", uploadError);
+//         // Keep existing avatar or set to empty
+//         authorData.avatar = currentUser?.avatar || "";
+//       }
+//     } else if (req.body.author?.avatar) {
+//       // If it's already a URL, use it directly
+//       authorData.avatar = req.body.author.avatar;
+//     }
+
+//     const blogPost = new BlogPost({
+//       title: req.body.title,
+//       description: req.body.description,
+//       content: req.body.content || "",
+//       image: req.body.image || "",
+//       tags: req.body.tags || [],
+//       status: req.body.status || "draft",
+//       author: authorData,
+//       author_id: req.userId,
+//       views: req.body.views || 0,
+//       likes: req.body.likes || 0,
+//     });
+
+//     const newBlogPost = await blogPost.save();
+//     console.log("Blog post saved successfully");
+
+//     res.status(201).json(newBlogPost);
+//   } catch (error) {
+//     console.error("Validation error:", error);
+
+//     if (error.name === "ValidationError") {
+//       const messages = Object.values(error.errors).map((err) => err.message);
+//       return res.status(400).json({
+//         message: "Validation failed",
+//         errors: messages,
+//       });
+//     }
+
+//     res.status(400).json({
+//       message: error.message,
+//     });
+//   }
+// };
+
+// Updated updateBlogPost function
+export const updateBlogPost = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Check if user owns this post
+    const existingPost = await BlogPost.findById(id);
+    if (!existingPost) {
+      return res.status(404).json({ message: "Blog post not found" });
+    }
+
+    if (existingPost.author_id.toString() !== req.userId.toString()) {
+      return res.status(403).json({ message: "Not authorized to update this post" });
+    }
+
+    // Handle avatar update if provided
+    if (req.body.author?.avatar && req.body.author.avatar.startsWith("data:image")) {
+      console.log("Base64 avatar detected in update - uploading to server...");
+      try {
+        const avatarUrl = await uploadAvatarToServer(req.body.author.avatar, req.userId);
+        req.body.author.avatar = avatarUrl;
+        console.log("Avatar uploaded successfully:", avatarUrl);
+      } catch (uploadError) {
+        console.log("Failed to upload avatar, keeping existing:", uploadError);
+        req.body.author.avatar = existingPost.author.avatar;
+      }
+    }
+
+    const updatedBlogPost = await BlogPost.findByIdAndUpdate(id, req.body, { new: true, runValidators: true });
+
+    res.json(updatedBlogPost);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+// Alternative simplified version without base64 upload (recommended)
 export const createBlogPost = async (req, res) => {
   try {
     console.log("Received data:", req.body);
@@ -92,13 +249,29 @@ export const createBlogPost = async (req, res) => {
       });
     }
 
-    // Get user data (you might want to fetch this from User model)
-    const currentUser = {
+    // Fetch user data from User model to get avatar URL
+    let currentUser = null;
+    try {
+      currentUser = await User.findById(req.userId);
+      if (!currentUser) {
+        console.log("User not found, using default values");
+      }
+    } catch (userError) {
+      console.log("Error fetching user:", userError);
+    }
+
+    // Prepare author data - only use URL avatars, ignore base64
+    const authorData = {
       _id: req.userId,
-      name: req.body.author?.name || "Unknown Author",
-      email: req.body.author?.email || "",
-      avatar: req.body.author?.avatar || "",
+      name: currentUser?.name || req.body.author?.name || "Unknown Author",
+      email: currentUser?.email || req.body.author?.email || "",
+      avatar: currentUser?.avatar || "", // Always use URL from user profile
     };
+
+    // If avatar is provided and it's a URL (not base64), use it
+    if (req.body.author?.avatar && !req.body.author.avatar.startsWith("data:image")) {
+      authorData.avatar = req.body.author.avatar;
+    }
 
     const blogPost = new BlogPost({
       title: req.body.title,
@@ -106,14 +279,9 @@ export const createBlogPost = async (req, res) => {
       content: req.body.content || "",
       image: req.body.image || "",
       tags: req.body.tags || [],
-      status: req.body.status || "draft", // Add status
-      author: {
-        _id: currentUser._id,
-        name: currentUser.name,
-        email: currentUser.email,
-        avatar: currentUser.avatar,
-      },
-      author_id: currentUser._id, // Add author_id
+      status: req.body.status || "draft",
+      author: authorData,
+      author_id: req.userId,
       views: req.body.views || 0,
       likes: req.body.likes || 0,
     });
@@ -136,29 +304,6 @@ export const createBlogPost = async (req, res) => {
     res.status(400).json({
       message: error.message,
     });
-  }
-};
-
-// Update blog post with status support
-export const updateBlogPost = async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    // Check if user owns this post
-    const existingPost = await BlogPost.findById(id);
-    if (!existingPost) {
-      return res.status(404).json({ message: "Blog post not found" });
-    }
-
-    if (existingPost.author_id.toString() !== req.userId.toString()) {
-      return res.status(403).json({ message: "Not authorized to update this post" });
-    }
-
-    const updatedBlogPost = await BlogPost.findByIdAndUpdate(id, req.body, { new: true, runValidators: true });
-
-    res.json(updatedBlogPost);
-  } catch (error) {
-    res.status(400).json({ message: error.message });
   }
 };
 

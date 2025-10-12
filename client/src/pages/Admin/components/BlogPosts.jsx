@@ -1,6 +1,7 @@
 // components/pages/Admin/components/BlogPosts/BlogPosts.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { Toaster, toast } from "react-hot-toast";
 import PostModal from "../../../components/PostModal";
 
 const BlogPosts = () => {
@@ -119,10 +120,10 @@ const BlogPosts = () => {
 
       // Remove from local state
       setBlogPosts((prev) => prev.filter((post) => post._id !== postId));
-      alert("Post deleted successfully!");
+      toast.success("Post deleted successfully!");
     } catch (error) {
       console.error("Error deleting post:", error);
-      alert(`Failed to delete post: ${error.message}`);
+      toast.error(`Failed to delete post: ${error.message}`);
     }
   };
 
@@ -134,7 +135,7 @@ const BlogPosts = () => {
       // First verify the post belongs to the current user
       const postToPublish = blogPosts.find((post) => post._id === postId);
       if (!postToPublish || postToPublish.author_id !== currentUser.id) {
-        alert("You can only publish your own posts");
+        toast.info("You can only publish your own posts");
         return;
       }
 
@@ -154,10 +155,10 @@ const BlogPosts = () => {
       // Update local state
       setBlogPosts((prev) => prev.map((post) => (post._id === postId ? { ...post, status: "published" } : post)));
 
-      alert("Post published successfully!");
+      toast.success("Post published successfully!");
     } catch (error) {
       console.error("Error publishing post:", error);
-      alert(`Failed to publish post: ${error.message}`);
+      toast.error(`Failed to publish post: ${error.message}`);
     }
   };
 
@@ -169,7 +170,7 @@ const BlogPosts = () => {
       // First verify the post belongs to the current user
       const postToUnpublish = blogPosts.find((post) => post._id === postId);
       if (!postToUnpublish || postToUnpublish.author_id !== currentUser.id) {
-        alert("You can only unpublish your own posts");
+        toast.info("You can only unpublish your own posts");
         return;
       }
 
@@ -189,10 +190,10 @@ const BlogPosts = () => {
       // Update local state
       setBlogPosts((prev) => prev.map((post) => (post._id === postId ? { ...post, status: "draft" } : post)));
 
-      alert("Post unpublished successfully!");
+      toast.success("Post unpublished successfully!");
     } catch (error) {
       console.error("Error unpublishing post:", error);
-      alert(`Failed to unpublish post: ${error.message}`);
+      toast.error(`Failed to unpublish post: ${error.message}`);
     }
   };
 
@@ -217,7 +218,7 @@ const BlogPosts = () => {
       if (editingPost) {
         // Verify the post being edited belongs to the current user
         if (editingPost.author_id !== currentUser.id) {
-          alert("You can only edit your own posts");
+          toast.info("You can only edit your own posts");
           return;
         }
 
@@ -258,10 +259,10 @@ const BlogPosts = () => {
 
       setIsModalOpen(false);
       setEditingPost(null);
-      alert(editingPost ? "Post updated successfully!" : "Post created successfully!");
+      toast.success(editingPost ? "Post updated successfully!" : "Post created successfully!");
     } catch (error) {
       console.error("Error saving post:", error);
-      alert(`Failed to save post: ${error.message}`);
+      toast.error(`Failed to save post: ${error.message}`);
     }
   };
 

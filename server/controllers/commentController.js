@@ -36,7 +36,7 @@ export const createComment = async (req, res) => {
       postId,
       user,
       text,
-      avatar: avatar || "https://i.pravatar.cc/50?img=7",
+      avatar: avatar || "",
       parentId: parentId || null,
     });
 

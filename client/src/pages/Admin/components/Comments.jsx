@@ -1,6 +1,7 @@
 // components/pages/Admin/components/Comments/Comments.jsx
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { Toaster, toast } from "react-hot-toast";
 import PostDetailsModal from "./PostDetailsModal"; // Adjust the import path as needed
 
 const Comments = () => {
@@ -144,10 +145,10 @@ const Comments = () => {
       setComments((prev) => prev.filter((comment) => comment._id !== commentId));
 
       // Show success message
-      alert("Comment deleted successfully");
+      toast.success("Comment deleted successfully");
     } catch (error) {
       console.error("Error deleting comment:", error);
-      alert("Failed to delete comment");
+      toast.error("Failed to delete comment");
     }
   };
 
@@ -163,7 +164,7 @@ const Comments = () => {
 
   const handleUpdateComment = async (commentId) => {
     if (!editText.trim()) {
-      alert("Please enter comment text");
+      toast.warning("Please enter comment text");
       return;
     }
 
@@ -189,10 +190,10 @@ const Comments = () => {
 
       setEditingComment(null);
       setEditText("");
-      alert("Comment updated successfully");
+      toast.success("Comment updated successfully");
     } catch (error) {
       console.error("Error updating comment:", error);
-      alert("Failed to update comment");
+      toast.error("Failed to update comment");
     }
   };
 
@@ -212,7 +213,7 @@ const Comments = () => {
 
   const handleSubmitReply = async (commentId) => {
     if (!replyText.trim()) {
-      alert("Please enter a reply message");
+      toast.warning("Please enter a reply message");
       return;
     }
 
@@ -230,7 +231,7 @@ const Comments = () => {
         postId: parentComment.postId || parentComment.post._id,
         user: currentUser.name || "Admin",
         text: replyText,
-        avatar: currentUser.avatar || "https://i.pravatar.cc/50?img=1",
+        avatar: currentUser.avatar || "",
         parentId: commentId,
       };
 
@@ -261,10 +262,10 @@ const Comments = () => {
         [commentId]: true,
       }));
 
-      alert("Reply submitted successfully");
+      toast.success("Reply submitted successfully");
     } catch (error) {
       console.error("Error submitting reply:", error);
-      alert("Failed to submit reply");
+      toast.error("Failed to submit reply");
     }
   };
 
@@ -277,14 +278,14 @@ const Comments = () => {
     if (post.status === "published") {
       window.open(`/blogposts/${post._id}`, "_blank");
     } else {
-      alert("This post is still a draft and not publicly available.");
+      toast.info("This post is still a draft and not publicly available.");
     }
   };
 
   const handleEditPost = (post) => {
     // Navigate to edit post page or open edit modal
     console.log("Edit post:", post);
-    alert(`Edit post: ${post.title}`);
+    toast.info(`Edit post: ${post.title}`);
   };
 
   const handleSearchSubmit = (e) => {
@@ -345,7 +346,7 @@ const Comments = () => {
             <div className="flex items-start gap-4">
               {/* User Avatar */}
               <div className="flex-shrink-0">
-                <img src={comment.avatar || "https://i.pravatar.cc/50?img=7"} alt={comment.user} className="w-12 h-12 rounded-full border-2 border-white shadow-md hover:scale-105 transition-transform duration-200" />
+                <img src={comment.avatar || ""} alt={comment.user} className="w-12 h-12 rounded-full border-2 border-white shadow-md hover:scale-105 transition-transform duration-200" />
               </div>
 
               {/* Comment Details */}
@@ -470,7 +471,7 @@ const Comments = () => {
                   {comment.post.image && <img src={comment.post.image} alt={comment.post.title} className="w-12 h-12 rounded-xl object-cover flex-shrink-0 shadow-md group-hover:scale-105 transition-transform duration-200" />}
                   <div className="min-w-0 flex-1">
                     <h5 className="text-sm font-semibold text-gray-800 leading-tight line-clamp-2 mb-1 group-hover:text-blue-600 transition-colors">{comment.post.title}</h5>
-                    <p className="text-xs text-gray-500 line-clamp-2 mb-2">{comment.post.description}</p>
+                    <p className="text-xs text-gray-500 line-clamp-2 mb-2">{comment.post.content}</p>
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-blue-600 font-medium">View Post</span>
                       <svg className="w-4 h-4 text-gray-400 group-hover:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -1,6 +1,7 @@
 // components/pages/Profile/components/PostDetailsModal.jsx
 import React, { useState, useEffect } from "react";
 import PostModal from "../../../components/PostModal";
+import MarkdownRenderer from "../../Blog/components/common/MarkdownRenderer";
 
 const PostDetailsModal = ({ post, isOpen, onClose, onEdit, onViewOnSite }) => {
   const [showEditModal, setShowEditModal] = useState(false);
@@ -101,7 +102,8 @@ const PostDetailsModal = ({ post, isOpen, onClose, onEdit, onViewOnSite }) => {
             </div>
 
             <h2 className="text-2xl font-bold text-gray-800 mb-3">{post.title}</h2>
-            <p className="text-gray-600 mb-4">{post.description}</p>
+            
+            <MarkdownRenderer content={post.content} className="text-gray-600 mb-4" />
 
             {post.tags && post.tags.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-4">

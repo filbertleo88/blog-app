@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import MarkdownRenderer from "../../../pages/Blog/components/common/MarkdownRenderer";
 
 const Sidebar = () => {
   const [recentPosts, setRecentPosts] = useState([]);
@@ -121,7 +122,9 @@ const Sidebar = () => {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-gray-800 group-hover:text-sky-500 transition line-clamp-2 leading-tight mb-1">{post.title}</p>
-                <p className="text-xs text-gray-500 line-clamp-2 mb-1">{post.description?.substring(0, 50) || "No description"}...</p>
+                <div className="text-xs text-gray-500 line-clamp-2 mb-1">
+                  <MarkdownRenderer content={post.content?.substring(0, 100) || "No content"} className="text-xs line-clamp-2" />
+                </div>
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-gray-400">{formatDate(post)}</span>
                   {post.tags?.[0] && <span className="text-xs bg-gray-100 text-gray-600 px-1 py-0.5 rounded">#{post.tags[0]}</span>}

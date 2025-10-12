@@ -1,5 +1,6 @@
 // components/pages/Admin/components/BlogPosts/PostModal.jsx
 import React, { useState, useEffect } from "react";
+import toast from "react-hot-toast";
 
 const PostModal = ({ isOpen, onClose, onSubmit, initialData, currentUser }) => {
   const [title, setTitle] = useState("");
@@ -11,6 +12,7 @@ const PostModal = ({ isOpen, onClose, onSubmit, initialData, currentUser }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imageUrl, setImageUrl] = useState("");
   const [status, setStatus] = useState("draft");
+  const [activeTab, setActiveTab] = useState("write"); // "write" or "preview"
 
   // Reset form when modal opens/closes or initialData changes
   useEffect(() => {
@@ -34,6 +36,7 @@ const PostModal = ({ isOpen, onClose, onSubmit, initialData, currentUser }) => {
         setImagePreview("");
         setImageUrl("");
         setStatus("draft");
+        setActiveTab("write");
       }
     }
   }, [isOpen, initialData]);
@@ -43,7 +46,7 @@ const PostModal = ({ isOpen, onClose, onSubmit, initialData, currentUser }) => {
     if (file) {
       setImage(file);
 
-      // Create preview URL
+      // Create preview URL (this is temporary, won't be saved as base64)
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result);
@@ -87,17 +90,178 @@ const PostModal = ({ isOpen, onClose, onSubmit, initialData, currentUser }) => {
     }
   };
 
+  // Improved markdown parser
+  const parseMarkdown = (text) => {
+    if (!text) return "";
+
+    let html = text;
+
+    // Process line by line to handle lists properly
+    const lines = html.split("\n");
+    let inList = false;
+    let inOrderedList = false;
+
+    const processedLines = lines.map((line, index) => {
+      const trimmedLine = line.trim();
+
+      // Handle unordered lists
+      if (trimmedLine.match(/^[-*+]\s/)) {
+        const listItem = trimmedLine.replace(/^[-*+]\s/, "");
+        if (!inList) {
+          inList = true;
+          return `<ul><li>${listItem}</li>`;
+        }
+        return `<li>${listItem}</li>`;
+      }
+
+      // Handle ordered lists
+      else if (trimmedLine.match(/^\d+\.\s/)) {
+        const listItem = trimmedLine.replace(/^\d+\.\s/, "");
+        if (!inOrderedList) {
+          inOrderedList = true;
+          return `<ol><li>${listItem}</li>`;
+        }
+        return `<li>${listItem}</li>`;
+      }
+
+      // Close lists when we encounter a non-list line
+      else {
+        let result = "";
+        if (inList) {
+          result += "</ul>";
+          inList = false;
+        }
+        if (inOrderedList) {
+          result += "</ol>";
+          inOrderedList = false;
+        }
+
+        // Handle regular lines
+        if (trimmedLine) {
+          result += processInlineMarkdown(line);
+        } else {
+          result += "<br>";
+        }
+
+        return result;
+      }
+    });
+
+    // Close any open lists at the end
+    let finalHtml = processedLines.join("");
+    if (inList) finalHtml += "</ul>";
+    if (inOrderedList) finalHtml += "</ol>";
+
+    // Wrap in paragraphs if needed
+    if (!finalHtml.includes("<ul>") && !finalHtml.includes("<ol>") && !finalHtml.includes("<h")) {
+      finalHtml = finalHtml.replace(/<br>/g, "</p><p>");
+      finalHtml = `<p>${finalHtml}</p>`;
+    }
+
+    return finalHtml;
+  };
+
+  // Helper function for inline markdown
+  const processInlineMarkdown = (text) => {
+    return (
+      text
+        // Headers
+        .replace(/^### (.*$)/gim, "<h3>$1</h3>")
+        .replace(/^## (.*$)/gim, "<h2>$1</h2>")
+        .replace(/^# (.*$)/gim, "<h1>$1</h1>")
+        // Bold
+        .replace(/\*\*(.*?)\*\*/gim, "<strong>$1</strong>")
+        .replace(/\_\_(.*?)\_\_/gim, "<strong>$1</strong>")
+        // Italic
+        .replace(/\*(.*?)\*/gim, "<em>$1</em>")
+        .replace(/\_(.*?)\_/gim, "<em>$1</em>")
+        // Links
+        .replace(/\[([^\[]+)\]\(([^\)]+)\)/gim, '<a href="$2" class="text-blue-600 hover:text-blue-800 underline" target="_blank" rel="noopener noreferrer">$1</a>')
+        // Code blocks (inline first)
+        .replace(/`([^`]+)`/gim, '<code class="bg-gray-100 px-1 rounded text-sm font-mono">$1</code>')
+        // Blockquotes
+        .replace(/^\> (.*$)/gim, '<blockquote class="border-l-4 border-gray-300 pl-4 italic text-gray-600 my-4">$1</blockquote>')
+    );
+  };
+
+  // Format text with markdown syntax
+  const formatText = (type, field) => {
+    const textarea = document.getElementById(field);
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = textarea.value.substring(start, end);
+
+    let formattedText = "";
+    let newCursorPos = 0;
+
+    switch (type) {
+      case "bold":
+        formattedText = `**${selectedText}**`;
+        newCursorPos = start + 2;
+        break;
+      case "italic":
+        formattedText = `*${selectedText}*`;
+        newCursorPos = start + 1;
+        break;
+      case "link":
+        formattedText = `[${selectedText || "link text"}](https://)`;
+        newCursorPos = start + 1;
+        break;
+      case "code":
+        formattedText = selectedText.includes("\n") ? `\`\`\`\n${selectedText}\n\`\`\`` : `\`${selectedText}\``;
+        newCursorPos = start + (selectedText.includes("\n") ? 4 : 1);
+        break;
+      case "header1":
+        formattedText = `# ${selectedText}`;
+        newCursorPos = start + 2;
+        break;
+      case "header2":
+        formattedText = `## ${selectedText}`;
+        newCursorPos = start + 3;
+        break;
+      case "header3":
+        formattedText = `### ${selectedText}`;
+        newCursorPos = start + 4;
+        break;
+      case "list":
+        formattedText = selectedText
+          ? selectedText
+              .split("\n")
+              .map((line) => `- ${line}`)
+              .join("\n")
+          : "- ";
+        newCursorPos = start + 2;
+        break;
+      default:
+        formattedText = selectedText;
+    }
+
+    const newValue = textarea.value.substring(0, start) + formattedText + textarea.value.substring(end);
+
+    if (field === "description") {
+      setDescription(newValue);
+    } else if (field === "content") {
+      setContent(newValue);
+    }
+
+    // Restore cursor position
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(newCursorPos, newCursorPos + (selectedText ? selectedText.length : 0));
+    }, 0);
+  };
+
   const handleSubmit = async (e, submitStatus = status) => {
     e.preventDefault();
 
     // Basic validation
     if (!title || title.length < 5) {
-      alert("Title is required and must be at least 5 characters");
+      toast.warning("Title is required and must be at least 5 characters");
       return;
     }
 
-    if (!description || description.length < 20) {
-      alert("Description is required and must be at least 20 characters");
+    if (!content || content.length < 20) {
+      toast.warning("Content is required and must be at least 20 characters");
       return;
     }
 
@@ -116,15 +280,23 @@ const PostModal = ({ isOpen, onClose, onSubmit, initialData, currentUser }) => {
         finalImageUrl = `https://source.unsplash.com/800x400/?${firstTag || "blog"}`;
       }
 
-      // Prepare post data
+      // Prepare author data - only send URL avatars
+      const authorData = {
+        name: currentUser?.name || currentUser?.username || "Unknown Author",
+        email: currentUser?.email || "",
+        avatar: currentUser?.avatar || "",
+      };
+
+      // Prepare post data - FIXED: Include content directly since it's required
       const postData = {
         title: title.trim(),
         description: description.trim(),
+        content: content.trim(), // This was missing - content is required
         status: submitStatus,
+        author: authorData,
       };
 
       // Add optional fields only if they have values
-      if (content.trim()) postData.content = content.trim();
       if (tags.trim()) {
         postData.tags = tags
           .split(",")
@@ -138,7 +310,7 @@ const PostModal = ({ isOpen, onClose, onSubmit, initialData, currentUser }) => {
       await onSubmit(postData);
     } catch (error) {
       console.error("Error creating post:", error);
-      alert(`Failed to create post: ${error.message}`);
+      toast.error(`Failed to create post: ${error.message}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -184,7 +356,7 @@ const PostModal = ({ isOpen, onClose, onSubmit, initialData, currentUser }) => {
       <div className="absolute inset-0 bg-gray-900/20 backdrop-blur-sm transition-all duration-300"></div>
 
       {/* Modal Content */}
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto transform transition-all duration-300 scale-100 relative z-10">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto transform transition-all duration-300 scale-100 relative z-10">
         {/* Header with Close Button */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-white rounded-t-xl sticky top-0 z-10">
           <h3 className="text-2xl font-bold text-gray-800">{initialData ? "Edit Post" : "Add a New Post"}</h3>
@@ -274,24 +446,95 @@ const PostModal = ({ isOpen, onClose, onSubmit, initialData, currentUser }) => {
           </div>
 
           <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-semibold mb-2">Description *</label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-              rows="3"
-              required
-            />
+            <label className="block text-gray-700 text-sm font-semibold mb-2">Content *</label>
+
+            {/* Tab Navigation */}
+            <div className="flex border-b border-gray-200 mb-2">
+              <button type="button" onClick={() => setActiveTab("write")} className={`px-4 py-2 text-sm font-medium ${activeTab === "write" ? "border-b-2 border-blue-500 text-blue-600" : "text-gray-500 hover:text-gray-700"}`}>
+                Write
+              </button>
+              <button type="button" onClick={() => setActiveTab("preview")} className={`px-4 py-2 text-sm font-medium ${activeTab === "preview" ? "border-b-2 border-blue-500 text-blue-600" : "text-gray-500 hover:text-gray-700"}`}>
+                Preview
+              </button>
+            </div>
+
+            {/* Markdown Toolbar */}
+            {activeTab === "write" && (
+              <div className="flex flex-wrap gap-1 mb-2 p-2 bg-gray-50 rounded-lg border">
+                <button type="button" onClick={() => formatText("bold", "content")} className="px-2 py-1 text-sm bg-white border rounded hover:bg-gray-100" title="Bold">
+                  <strong>B</strong>
+                </button>
+                <button type="button" onClick={() => formatText("italic", "content")} className="px-2 py-1 text-sm bg-white border rounded hover:bg-gray-100" title="Italic">
+                  <em>I</em>
+                </button>
+                <button type="button" onClick={() => formatText("header1", "content")} className="px-2 py-1 text-sm bg-white border rounded hover:bg-gray-100" title="Heading 1">
+                  H1
+                </button>
+                <button type="button" onClick={() => formatText("header2", "content")} className="px-2 py-1 text-sm bg-white border rounded hover:bg-gray-100" title="Heading 2">
+                  H2
+                </button>
+                <button type="button" onClick={() => formatText("header3", "content")} className="px-2 py-1 text-sm bg-white border rounded hover:bg-gray-100" title="Heading 3">
+                  H3
+                </button>
+                <button type="button" onClick={() => formatText("link", "content")} className="px-2 py-1 text-sm bg-white border rounded hover:bg-gray-100" title="Link">
+                  🔗
+                </button>
+                <button type="button" onClick={() => formatText("code", "content")} className="px-2 py-1 text-sm bg-white border rounded hover:bg-gray-100 font-mono" title="Code Block">
+                  {`</>`}
+                </button>
+                <button type="button" onClick={() => formatText("list", "content")} className="px-2 py-1 text-sm bg-white border rounded hover:bg-gray-100" title="List">
+                  • List
+                </button>
+              </div>
+            )}
+
+            {/* Content Area */}
+            {activeTab === "write" ? (
+              <textarea
+                id="content"
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 font-mono text-sm"
+                rows="8"
+                required
+                placeholder="Write your blog post content using Markdown..."
+              />
+            ) : (
+              <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white min-h-[200px] prose max-w-none" dangerouslySetInnerHTML={{ __html: parseMarkdown(content) }} />
+            )}
+
+            {/* Markdown Help Text */}
+            <div className="mt-2 text-xs text-gray-500">
+              <p>Supports Markdown: **bold**, *italic*, # headers, [links](url), `code`, ```code blocks```, - lists</p>
+            </div>
           </div>
 
           <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-semibold mb-2">Content</label>
+            <label className="block text-gray-700 text-sm font-semibold mb-2">Description</label>
+
+            {/* Markdown Toolbar for Description */}
+            <div className="flex flex-wrap gap-1 mb-2 p-2 bg-gray-50 rounded-lg border">
+              <button type="button" onClick={() => formatText("bold", "description")} className="px-2 py-1 text-sm bg-white border rounded hover:bg-gray-100" title="Bold">
+                <strong>B</strong>
+              </button>
+              <button type="button" onClick={() => formatText("italic", "description")} className="px-2 py-1 text-sm bg-white border rounded hover:bg-gray-100" title="Italic">
+                <em>I</em>
+              </button>
+              <button type="button" onClick={() => formatText("link", "description")} className="px-2 py-1 text-sm bg-white border rounded hover:bg-gray-100" title="Link">
+                🔗
+              </button>
+              <button type="button" onClick={() => formatText("code", "description")} className="px-2 py-1 text-sm bg-white border rounded hover:bg-gray-100 font-mono" title="Code">
+                {`</>`}
+              </button>
+            </div>
+
             <textarea
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-              rows="6"
-              placeholder="Write your full blog post content here..."
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 font-mono text-sm"
+              rows="3"
+              placeholder="Write a brief description..."
             />
           </div>
 
@@ -385,3 +628,80 @@ const PostModal = ({ isOpen, onClose, onSubmit, initialData, currentUser }) => {
 };
 
 export default PostModal;
+
+// <div className="mb-4">
+//   <label className="block text-gray-700 text-sm font-semibold mb-2">Description *</label>
+
+//   {/* Tab Navigation for Description */}
+//   <div className="flex border-b border-gray-200 mb-2">
+//     <button type="button" onClick={() => setActiveTab("write")} className={`px-4 py-2 text-sm font-medium ${activeTab === "write" ? "border-b-2 border-blue-500 text-blue-600" : "text-gray-500 hover:text-gray-700"}`}>
+//       Write
+//     </button>
+//     <button type="button" onClick={() => setActiveTab("preview")} className={`px-4 py-2 text-sm font-medium ${activeTab === "preview" ? "border-b-2 border-blue-500 text-blue-600" : "text-gray-500 hover:text-gray-700"}`}>
+//       Preview
+//     </button>
+//   </div>
+
+//   {/* Markdown Toolbar for Description */}
+//   {activeTab === "write" && (
+//     <div className="flex flex-wrap gap-1 mb-2 p-2 bg-gray-50 rounded-lg border">
+//       <button type="button" onClick={() => formatText("bold", "description")} className="px-2 py-1 text-sm bg-white border rounded hover:bg-gray-100" title="Bold">
+//         <strong>B</strong>
+//       </button>
+//       <button type="button" onClick={() => formatText("italic", "description")} className="px-2 py-1 text-sm bg-white border rounded hover:bg-gray-100" title="Italic">
+//         <em>I</em>
+//       </button>
+//       <button type="button" onClick={() => formatText("header1", "description")} className="px-2 py-1 text-sm bg-white border rounded hover:bg-gray-100" title="Heading 1">
+//         H1
+//       </button>
+//       <button type="button" onClick={() => formatText("header2", "description")} className="px-2 py-1 text-sm bg-white border rounded hover:bg-gray-100" title="Heading 2">
+//         H2
+//       </button>
+//       <button type="button" onClick={() => formatText("header3", "description")} className="px-2 py-1 text-sm bg-white border rounded hover:bg-gray-100" title="Heading 3">
+//         H3
+//       </button>
+//       <button type="button" onClick={() => formatText("link", "description")} className="px-2 py-1 text-sm bg-white border rounded hover:bg-gray-100" title="Link">
+//         🔗
+//       </button>
+//       <button type="button" onClick={() => formatText("code", "description")} className="px-2 py-1 text-sm bg-white border rounded hover:bg-gray-100 font-mono" title="Code Block">
+//         {`</>`}
+//       </button>
+//       <button type="button" onClick={() => formatText("list", "description")} className="px-2 py-1 text-sm bg-white border rounded hover:bg-gray-100" title="List">
+//         • List
+//       </button>
+//     </div>
+//   )}
+
+//   {/* Description Area */}
+//   {activeTab === "write" ? (
+//     <textarea
+//       id="description"
+//       value={description}
+//       onChange={(e) => setDescription(e.target.value)}
+//       className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 font-mono text-sm"
+//       rows="6"
+//       required
+//       placeholder="Write your blog post description... (supports Markdown)"
+//     />
+//   ) : (
+//     <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white min-h-[200px] prose max-w-none" dangerouslySetInnerHTML={{ __html: parseMarkdown(description) }} />
+//   )}
+
+//   {/* Markdown Help Text */}
+//   <div className="mt-2 text-xs text-gray-500">
+//     <p>Supports Markdown: **bold**, *italic*, # headers, [links](url), `code`, ```code blocks```, - lists</p>
+//   </div>
+// </div>
+
+// <div className="mb-4">
+//   <label className="block text-gray-700 text-sm font-semibold mb-2">Content</label>
+
+//   {/* Simple textarea for Content (since it's optional) */}
+//   <textarea
+//     value={content}
+//     onChange={(e) => setContent(e.target.value)}
+//     className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+//     rows="3"
+//     placeholder="Write your full blog post content here... (optional)"
+//   />
+// </div>

@@ -1,8 +1,10 @@
 // components/pages/Profile/Profile.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { Toaster, toast } from "react-hot-toast";
 import PostModal from "../../../components/PostModal";
 import PostDetailsModal from "./PostDetailsModal";
+import MarkdownRenderer from "../../Blog/components/common/MarkdownRenderer";
 
 const Profile = () => {
   const [user, setUser] = useState(null);
@@ -158,11 +160,11 @@ const Profile = () => {
       // Update local state
       setUserPosts((prev) => prev.map((p) => (p._id === post._id ? updatedPost : p)));
 
-      alert("Post updated successfully!");
+      toast.success("Post updated successfully!");
       fetchUserPosts(currentUser.id, token); // Refresh data
     } catch (error) {
       console.error("Error updating post:", error);
-      alert("Failed to update post");
+      toast.error("Failed to update post");
     }
   };
 
@@ -200,11 +202,11 @@ const Profile = () => {
       setUserPosts((prev) => [newPost, ...prev]);
 
       setShowCreateModal(false);
-      alert("Post created successfully!");
+      toast.success("Post created successfully!");
       fetchUserPosts(currentUser.id, token); // Refresh data
     } catch (error) {
       console.error("Error creating post:", error);
-      alert("Failed to create post");
+      toast.error("Failed to create post");
     }
   };
 
@@ -212,7 +214,7 @@ const Profile = () => {
     if (post.status === "published") {
       window.open(`/blogposts/${post._id}`, "_blank");
     } else {
-      alert("This post is still a draft and not publicly available.");
+      toast.info("This post is still a draft and not publicly available.");
     }
   };
 
@@ -279,7 +281,7 @@ const Profile = () => {
               {showRank && <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-bold">#{index + 1}</div>}
               <h3 className="font-semibold text-gray-800 text-lg leading-tight group-hover:text-blue-600 transition-colors line-clamp-2">{post.title}</h3>
             </div>
-            <p className="text-gray-600 text-sm line-clamp-2 mb-3">{post.description}</p>
+            <MarkdownRenderer content={post.content?.substring(0, 100)} className=" line-clamp-2 text-gray-600 mb-4 leading-relaxed" />
           </div>
           {post.image && <img src={post.image} alt={post.title} className="w-16 h-16 rounded-lg object-cover ml-4 flex-shrink-0 group-hover:scale-105 transition-transform duration-300" />}
         </div>

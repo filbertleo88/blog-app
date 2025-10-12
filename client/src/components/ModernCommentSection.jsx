@@ -180,7 +180,7 @@ const ModernCommentSection = ({ onCommentAction, isAuthenticated, onAuthRequired
     if (text.trim() === "") return;
 
     try {
-      const userData = currentUser || { name: "Unknown User", avatar: "https://i.pravatar.cc/50" };
+      const userData = currentUser || { name: "Unknown User", avatar: "" };
 
       const response = await fetch("http://localhost:5009/api/comments", {
         method: "POST",
@@ -192,7 +192,7 @@ const ModernCommentSection = ({ onCommentAction, isAuthenticated, onAuthRequired
           user: userData.name || userData.username || "@CurrentUser",
           text,
           parentId,
-          avatar: userData.avatar || userData.profilePicture || "https://i.pravatar.cc/50",
+          avatar: userData.avatar || userData.profilePicture || "",
         }),
       });
 
@@ -237,7 +237,7 @@ const ModernCommentSection = ({ onCommentAction, isAuthenticated, onAuthRequired
     if (newComment.trim() === "") return;
 
     try {
-      const userData = currentUser || { name: "Unknown User", avatar: "https://i.pravatar.cc/50" };
+      const userData = currentUser || { name: "Unknown User", avatar: "" };
 
       const response = await fetch("http://localhost:5009/api/comments", {
         method: "POST",
@@ -248,7 +248,7 @@ const ModernCommentSection = ({ onCommentAction, isAuthenticated, onAuthRequired
           postId,
           user: userData.name || userData.username || "@CurrentUser",
           text: newComment,
-          avatar: userData.avatar || userData.profilePicture || "https://i.pravatar.cc/50",
+          avatar: userData.avatar || userData.profilePicture || "",
         }),
       });
 
@@ -331,7 +331,7 @@ const ModernCommentSection = ({ onCommentAction, isAuthenticated, onAuthRequired
           {isCommentBoxOpen && (
             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="mb-6">
               <div className="flex items-start space-x-3 mb-3">
-                <img src={currentUser?.avatar || currentUser?.profilePicture || "https://i.pravatar.cc/50"} alt="Your avatar" className="w-8 h-8 rounded-full" />
+                <img src={currentUser?.avatar || currentUser?.profilePicture || ""} alt="Your avatar" className="w-8 h-8 rounded-full" />
                 <span className="font-semibold text-gray-900">{currentUser?.name || currentUser?.username || "You"}</span>
               </div>
               <textarea
