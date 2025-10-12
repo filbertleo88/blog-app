@@ -18,7 +18,7 @@ const DashboardSidebar = ({ activeNav, onNavChange, onProfileUpdate }) => {
 
   // Sync the internal state with the user from auth context
   useEffect(() => {
-    console.log("DashboardSidebar - User from auth context:", currentUser);
+    // console.log("DashboardSidebar - User from auth context:", currentUser);
     if (currentUser) {
       setEditFormData({
         name: currentUser.name || "",

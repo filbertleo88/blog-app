@@ -117,89 +117,6 @@ const uploadAvatarToServer = async (base64Image, userId) => {
   }
 };
 
-// // Updated createBlogPost function
-// export const createBlogPost = async (req, res) => {
-//   try {
-//     console.log("Received data:", req.body);
-//     console.log("User making request:", req.userId);
-
-//     // Validate required fields
-//     if (!req.body.title || !req.body.content) {
-//       return res.status(400).json({
-//         message: "Title and content are required",
-//       });
-//     }
-
-//     // Fetch user data from User model to get avatar URL
-//     let currentUser = null;
-//     try {
-//       currentUser = await User.findById(req.userId);
-//       if (!currentUser) {
-//         console.log("User not found, using default values");
-//       }
-//     } catch (userError) {
-//       console.log("Error fetching user:", userError);
-//     }
-
-//     // Prepare author data
-//     let authorData = {
-//       _id: req.userId || req.user._id,
-//       name: currentUser?.name || req.body.author?.name || "Unknown Author",
-//       email: currentUser?.email || req.body.author?.email || "",
-//       avatar: currentUser?.avatar || "", // Start with user's existing avatar URL
-//     };
-
-//     // If new avatar is provided as base64, upload it and get URL
-//     if (req.body.author?.avatar && req.body.author.avatar.startsWith("data:image")) {
-//       console.log("Base64 avatar detected - uploading to server...");
-//       try {
-//         const avatarUrl = await uploadAvatarToServer(req.body.author.avatar, req.userId);
-//         authorData.avatar = avatarUrl;
-//         console.log("Avatar uploaded successfully:", avatarUrl);
-//       } catch (uploadError) {
-//         console.error("Failed to upload avatar, using default:", uploadError);
-//         // Keep existing avatar or set to empty
-//         authorData.avatar = currentUser?.avatar || "";
-//       }
-//     } else if (req.body.author?.avatar) {
-//       // If it's already a URL, use it directly
-//       authorData.avatar = req.body.author.avatar;
-//     }
-
-//     const blogPost = new BlogPost({
-//       title: req.body.title,
-//       description: req.body.description,
-//       content: req.body.content || "",
-//       image: req.body.image || "",
-//       tags: req.body.tags || [],
-//       status: req.body.status || "draft",
-//       author: authorData,
-//       author_id: req.userId,
-//       views: req.body.views || 0,
-//       likes: req.body.likes || 0,
-//     });
-
-//     const newBlogPost = await blogPost.save();
-//     console.log("Blog post saved successfully");
-
-//     res.status(201).json(newBlogPost);
-//   } catch (error) {
-//     console.error("Validation error:", error);
-
-//     if (error.name === "ValidationError") {
-//       const messages = Object.values(error.errors).map((err) => err.message);
-//       return res.status(400).json({
-//         message: "Validation failed",
-//         errors: messages,
-//       });
-//     }
-
-//     res.status(400).json({
-//       message: error.message,
-//     });
-//   }
-// };
-
 // Updated updateBlogPost function
 export const updateBlogPost = async (req, res) => {
   try {
@@ -243,7 +160,7 @@ export const createBlogPost = async (req, res) => {
     console.log("User making request:", req.userId);
 
     // Validate required fields
-    if (!req.body.title || !req.body.description) {
+    if (!req.body.title || !req.body.content) {
       return res.status(400).json({
         message: "Title and description are required",
       });
@@ -275,7 +192,7 @@ export const createBlogPost = async (req, res) => {
 
     const blogPost = new BlogPost({
       title: req.body.title,
-      description: req.body.description,
+      content: req.body.content,
       content: req.body.content || "",
       image: req.body.image || "",
       tags: req.body.tags || [],

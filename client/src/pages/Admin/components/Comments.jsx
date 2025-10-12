@@ -3,6 +3,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Toaster, toast } from "react-hot-toast";
 import PostDetailsModal from "./PostDetailsModal"; // Adjust the import path as needed
+import MarkdownRenderer from "../../Blog/components/common/MarkdownRenderer";
 
 const Comments = () => {
   const [user, setUser] = useState(null);
@@ -17,6 +18,7 @@ const Comments = () => {
   const [error, setError] = useState(null);
   const [viewingPost, setViewingPost] = useState(null);
   const [showPostModal, setShowPostModal] = useState(false);
+
   const navigate = useNavigate();
 
   // Fetch comments from backend - only from author's own posts
@@ -69,7 +71,7 @@ const Comments = () => {
               post: {
                 _id: post._id,
                 title: post.title,
-                description: post.description,
+                description: post.description ,
                 image: post.image || "https://source.unsplash.com/random/800x400/?blog",
                 tags: post.tags || [],
                 createdAt: post.createdAt,
@@ -346,7 +348,7 @@ const Comments = () => {
             <div className="flex items-start gap-4">
               {/* User Avatar */}
               <div className="flex-shrink-0">
-                <img src={comment.avatar || ""} alt={comment.user} className="w-12 h-12 rounded-full border-2 border-white shadow-md hover:scale-105 transition-transform duration-200" />
+                <img src={comment.avatar || null} alt={comment.user} className="w-12 h-12 rounded-full border-2 border-white shadow-md hover:scale-105 transition-transform duration-200" />
               </div>
 
               {/* Comment Details */}
@@ -471,7 +473,7 @@ const Comments = () => {
                   {comment.post.image && <img src={comment.post.image} alt={comment.post.title} className="w-12 h-12 rounded-xl object-cover flex-shrink-0 shadow-md group-hover:scale-105 transition-transform duration-200" />}
                   <div className="min-w-0 flex-1">
                     <h5 className="text-sm font-semibold text-gray-800 leading-tight line-clamp-2 mb-1 group-hover:text-blue-600 transition-colors">{comment.post.title}</h5>
-                    <p className="text-xs text-gray-500 line-clamp-2 mb-2">{comment.post.content}</p>
+                    <MarkdownRenderer content={comment.post.content} className="text-xs text-gray-500 line-clamp-2 mb-2" />
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-blue-600 font-medium">View Post</span>
                       <svg className="w-4 h-4 text-gray-400 group-hover:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">

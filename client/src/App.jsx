@@ -43,7 +43,7 @@ const App = () => {
         if (storedToken && storedUserData) {
           try {
             const parsedUser = JSON.parse(storedUserData);
-            console.log("✅ User loaded from localStorage:", parsedUser);
+            // console.log("✅ User loaded from localStorage:", parsedUser);
             setUser(parsedUser);
           } catch (error) {
             console.error("❌ Error parsing user data:", error);
@@ -81,7 +81,7 @@ const App = () => {
     if (authStatus === "success" && token && userData) {
       try {
         const user = JSON.parse(decodeURIComponent(userData));
-        console.log("✅ OAuth user received:", user);
+        // console.log("✅ OAuth user received:", user);
 
         localStorage.setItem("token", token);
         localStorage.setItem("user", JSON.stringify(user));
@@ -195,12 +195,12 @@ const App = () => {
     toast.success("Profile updated successfully!");
   };
 
-  // Debug user state
-  useEffect(() => {
-    console.log("🔄 Current user state:", user);
-    console.log("🔄 User has id:", user?.id);
-    console.log("🔄 Should show floating button:", user && user.id);
-  }, [user]);
+  // // Debug user state
+  // useEffect(() => {
+  //   console.log("🔄 Current user state:", user);
+  //   console.log("🔄 User has id:", user?.id);
+  //   console.log("🔄 Should show floating button:", user && user.id);
+  // }, [user]);
 
   if (loading) {
     return (
