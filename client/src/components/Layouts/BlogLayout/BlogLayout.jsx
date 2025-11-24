@@ -4,6 +4,7 @@ import BlogNavbar from "./BlogNavbar";
 import AuthModal from "../../Auth/AuthModal";
 import Sidebar from "./Sidebar";
 import { useLocation } from "react-router-dom";
+import API_BASE_URL from "../../../config/api";
 
 const BlogLayout = ({ children, activeMenu }) => {
   const [posts, setPosts] = useState([]);
@@ -17,7 +18,7 @@ const BlogLayout = ({ children, activeMenu }) => {
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        const response = await fetch("http://localhost:5009/api/blogposts");
+        const response = await fetch(`${API_BASE_URL}/blogposts`);
         if (response.ok) {
           const data = await response.json();
           setPosts(data);

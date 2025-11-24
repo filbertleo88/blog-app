@@ -5,6 +5,7 @@ import { IoMdArrowDropdown } from "react-icons/io";
 import { motion, AnimatePresence } from "framer-motion";
 import { formatDistanceToNow } from "date-fns";
 import AuthModal from "./Auth/AuthModal";
+import API_BASE_URL from "../config/api";
 
 const Comment = ({ comment, onAddReply, level = 0, isAuthenticated, onAuthRequired }) => {
   const [showReplies, setShowReplies] = useState(false);
@@ -150,7 +151,7 @@ const ModernCommentSection = ({ onCommentAction, isAuthenticated, onAuthRequired
     const fetchComments = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`http://localhost:5009/api/comments/post/${postId}`);
+        const response = await fetch(`${API_BASE_URL}/comments/post/${postId}`);
 
         if (!response.ok) {
           throw new Error("Failed to fetch comments");
@@ -182,7 +183,7 @@ const ModernCommentSection = ({ onCommentAction, isAuthenticated, onAuthRequired
     try {
       const userData = currentUser || { name: "Unknown User", avatar: "" };
 
-      const response = await fetch("http://localhost:5009/api/comments", {
+      const response = await fetch(`${API_BASE_URL}/comments`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -239,7 +240,7 @@ const ModernCommentSection = ({ onCommentAction, isAuthenticated, onAuthRequired
     try {
       const userData = currentUser || { name: "Unknown User", avatar: "" };
 
-      const response = await fetch("http://localhost:5009/api/comments", {
+      const response = await fetch(`${API_BASE_URL}/comments`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

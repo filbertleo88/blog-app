@@ -4,6 +4,7 @@ import { Toaster, toast } from "react-hot-toast";
 import BlogLayout from "../../../components/Layouts/BlogLayout/BlogLayout";
 import ModernCommentSection from "../../../components/ModernCommentSection";
 import MarkdownRenderer from "./common/MarkdownRenderer";
+import API_BASE_URL from "../../../config/api";
 
 const BlogPostView = () => {
   const { id } = useParams();
@@ -70,7 +71,7 @@ const BlogPostView = () => {
         console.log("Fetching post with ID:", id);
 
         // Fetch post data
-        const response = await fetch(`http://localhost:5009/api/blogposts/${id}`);
+        const response = await fetch(`${API_BASE_URL}/blogposts/${id}`);
         if (!response.ok) {
           throw new Error(`Failed to fetch post: ${response.status}`);
         }
@@ -122,7 +123,7 @@ const BlogPostView = () => {
       const userId = getUserId();
       const sessionId = localStorage.getItem("blog_sessionId") || getUserId();
 
-      const response = await fetch(`http://localhost:5009/api/blogposts/${id}/views`, {
+      const response = await fetch(`${API_BASE_URL}/blogposts/${id}/views`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -165,7 +166,7 @@ const BlogPostView = () => {
         isAuthenticated: isAuthenticated(),
       });
 
-      const response = await fetch(`http://localhost:5009/api/blogposts/${id}/toggle-like`, {
+      const response = await fetch(`${API_BASE_URL}/blogposts/${id}/toggle-like`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

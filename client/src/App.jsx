@@ -16,6 +16,7 @@ import DashboardLayout from "./components/Layouts/BlogLayout/DashboardLayout";
 import ScrollToTop from "./components/ScrollToTop";
 import BlogLayout from "./components/Layouts/BlogLayout/BlogLayout";
 import { AuthProvider } from "./contexts/AuthContext";
+import API_BASE_URL from "./config/api";
 
 const App = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -128,7 +129,7 @@ const App = () => {
 
       console.log("Final data being sent to API:", postWithAuthor);
 
-      const response = await fetch("http://localhost:5009/api/blogposts", {
+      const response = await fetch(`${API_BASE_URL}/blogposts`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -160,7 +161,7 @@ const App = () => {
       handleCloseModal();
 
       // Refresh posts
-      const refreshResponse = await fetch("http://localhost:5009/api/blogposts");
+      const refreshResponse = await fetch(`${API_BASE_URL}/blogposts`);
       if (refreshResponse.ok) {
         const refreshResult = await refreshResponse.json();
         const refreshedPosts = Array.isArray(refreshResult) ? refreshResult : refreshResult.data || refreshResult.posts || [];

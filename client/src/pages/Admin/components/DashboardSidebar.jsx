@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Toaster, toast } from "react-hot-toast";
 import { useAuth } from "../../../contexts/AuthContext";
+import API_BASE_URL from "../../../config/api";
 
 const DashboardSidebar = ({ activeNav, onNavChange, onProfileUpdate }) => {
   const { user: currentUser, logout: authLogout, updateUser } = useAuth();
@@ -106,7 +107,7 @@ const DashboardSidebar = ({ activeNav, onNavChange, onProfileUpdate }) => {
 
       console.log("🔍 SAVE PROFILE - Sending request with data:", updateData);
 
-      const response = await fetch("http://localhost:5009/api/auth/profile", {
+      const response = await fetch(`${API_BASE_URL}/auth/profile`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import axios from "axios";
 import BlogPostCard from "./BlogPostCard";
 import BlogLayout from "../../../components/Layouts/BlogLayout/BlogLayout";
+import API_BASE_URL from "../../../config/api";
 
 const PostByTags = () => {
   const { tag } = useParams();
@@ -16,7 +17,7 @@ const PostByTags = () => {
         setLoading(true);
         setError(null);
 
-        const response = await axios.get(`http://localhost:5009/api/blogposts/tags/${encodeURIComponent(tag)}`);
+        const response = await axios.get(`${API_BASE_URL}/blogposts/tags/${encodeURIComponent(tag)}`);
 
         // ✅ Only show published posts
         const publishedPosts = response.data.filter((post) => post.status === "published");

@@ -1,6 +1,7 @@
 // components/pages/Admin/components/BlogPosts/PostModal.jsx
 import React, { useState, useEffect } from "react";
 import toast from "react-hot-toast";
+import API_BASE_URL from "../config/api";
 
 const PostModal = ({ isOpen, onClose, onSubmit, initialData, currentUser }) => {
   const [title, setTitle] = useState("");
@@ -68,7 +69,7 @@ const PostModal = ({ isOpen, onClose, onSubmit, initialData, currentUser }) => {
     try {
       console.log("Uploading image...", file.name);
 
-      const response = await fetch("http://localhost:5009/api/upload", {
+      const response = await fetch(`${API_BASE_URL}/upload`, {
         method: "POST",
         body: formData,
       });

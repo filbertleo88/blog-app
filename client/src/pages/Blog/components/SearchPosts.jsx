@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import BlogPostCard from "./BlogPostCard";
 import BlogLayout from "../../../components/Layouts/BlogLayout/BlogLayout";
+import API_BASE_URL from "../../../config/api";
 
 const SearchPosts = () => {
   const [searchParams] = useSearchParams();
@@ -22,7 +23,7 @@ const SearchPosts = () => {
           return;
         }
 
-        const response = await fetch(`http://localhost:5009/api/blogposts/search?q=${encodeURIComponent(query)}`);
+        const response = await fetch(`${API_BASE_URL}/blogposts/search?q=${encodeURIComponent(query)}`);
 
         if (!response.ok) {
           throw new Error(`Failed to fetch search results: ${response.status}`);

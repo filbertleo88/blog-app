@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import BlogPostCard from "./BlogPostCard";
 import BlogLayout from "../../../components/Layouts/BlogLayout/BlogLayout";
+import API_BASE_URL from "../../../config/api";
 
 const BlogLandingPage = () => {
   const [posts, setPosts] = useState([]);
@@ -46,7 +47,7 @@ const BlogLandingPage = () => {
     const fetchPosts = async () => {
       try {
         setLoading(true);
-        const response = await fetch("http://localhost:5009/api/blogposts");
+        const response = await fetch(`${API_BASE_URL}/blogposts`);
         if (!response.ok) {
           throw new Error("Network response was not ok");
         }

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import MarkdownRenderer from "../../../pages/Blog/components/common/MarkdownRenderer";
+import API_BASE_URL from "../../../config/api";
 
 const Sidebar = () => {
   const [recentPosts, setRecentPosts] = useState([]);
@@ -42,7 +43,7 @@ const Sidebar = () => {
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        const response = await fetch("http://localhost:5009/api/blogposts");
+        const response = await fetch(`${API_BASE_URL}/blogposts`);
         if (!response.ok) {
           throw new Error("Failed to fetch posts");
         }

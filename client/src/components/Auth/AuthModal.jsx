@@ -5,6 +5,7 @@ import { FcGoogle } from "react-icons/fc";
 import { HiOutlineX } from "react-icons/hi";
 import { Toaster, toast } from "react-hot-toast";
 import { useAuth } from "../../contexts/AuthContext";
+import API_BASE_URL from "../../config/api";
 
 const AuthModal = ({ isVisible, onClose, initialView = "login", onViewSwitch, navigate }) => {
   const { login } = useAuth();
@@ -195,7 +196,7 @@ const AuthModal = ({ isVisible, onClose, initialView = "login", onViewSwitch, na
     try {
       if (!otpSent) {
         // Request OTP
-        const response = await fetch("http://localhost:5009/api/auth/forgot-password", {
+        const response = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -218,7 +219,7 @@ const AuthModal = ({ isVisible, onClose, initialView = "login", onViewSwitch, na
         }
       } else {
         // Verify OTP and reset password
-        const response = await fetch("http://localhost:5009/api/auth/reset-password", {
+        const response = await fetch(`${API_BASE_URL}/auth/reset-password`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -265,7 +266,7 @@ const AuthModal = ({ isVisible, onClose, initialView = "login", onViewSwitch, na
   const handleGoogleAuth = () => {
     // Redirect to Google OAuth with return URL
     const returnUrl = window.location.pathname;
-    window.location.href = `http://localhost:5009/api/auth/google?returnUrl=${encodeURIComponent(returnUrl)}`;
+    window.location.href = `${API_BASE_URL}/auth/google?returnUrl=${encodeURIComponent(returnUrl)}`;
   };
 
   const resetForm = () => {

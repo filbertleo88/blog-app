@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Toaster, toast } from "react-hot-toast";
 import PostDetailsModal from "./PostDetailsModal"; // Adjust the import path as needed
 import MarkdownRenderer from "../../Blog/components/common/MarkdownRenderer";
+import API_BASE_URL from "../../../config/api";
 
 const Comments = () => {
   const [user, setUser] = useState(null);
@@ -36,7 +37,7 @@ const Comments = () => {
       }
 
       // Fetch only the current user's posts
-      const response = await fetch("http://localhost:5009/api/blogposts", {
+      const response = await fetch(`${API_BASE_URL}/blogposts`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -57,7 +58,7 @@ const Comments = () => {
       const allComments = [];
       for (const post of userPosts) {
         try {
-          const commentsResponse = await fetch(`http://localhost:5009/api/comments/post/${post._id}`, {
+          const commentsResponse = await fetch(`${API_BASE_URL}/comments/post/${post._id}`, {
             headers: {
               Authorization: `Bearer ${token}`,
             },
@@ -131,7 +132,7 @@ const Comments = () => {
 
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(`http://localhost:5009/api/comments/${commentId}`, {
+      const response = await fetch(`${API_BASE_URL}/comments/${commentId}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -172,7 +173,7 @@ const Comments = () => {
 
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(`http://localhost:5009/api/comments/${commentId}`, {
+      const response = await fetch(`${API_BASE_URL}/comments/${commentId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -237,7 +238,7 @@ const Comments = () => {
         parentId: commentId,
       };
 
-      const response = await fetch("http://localhost:5009/api/comments", {
+      const response = await fetch(`${API_BASE_URL}/comments`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -1,6 +1,7 @@
 // controllers/blogPostController.js
 import BlogPost from "../models/BlogPost.js";
 import User from "../models/User.js"; // Add this import
+import API_BASE_URL from "../../client/src/config/api.js";
 
 // Alternative: Modify existing getAllBlogPosts
 export const getAllBlogPosts = async (req, res) => {
@@ -100,7 +101,7 @@ const uploadAvatarToServer = async (base64Image, userId) => {
     formData.append("image", blob, `avatar-${userId}-${Date.now()}.${imageType}`);
 
     // Upload to your server
-    const response = await fetch("http://localhost:5009/api/upload", {
+    const response = await fetch(`${API_BASE_URL}/upload`, {
       method: "POST",
       body: formData,
     });
