@@ -137,10 +137,10 @@ const AuthModal = ({ isVisible, onClose, initialView = "login", onViewSwitch, na
     setError("");
 
     try {
-      const endpoint = isLoginView ? "/api/auth/login" : "/api/auth/register";
+      const endpoint = isLoginView ? "/auth/login" : "/auth/register";
       const payload = isLoginView ? { email: formData.email, password: formData.password } : { name: formData.name, email: formData.email, password: formData.password };
 
-      const response = await fetch(`http://localhost:5009${endpoint}`, {
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -5,6 +5,7 @@ import { Toaster, toast } from "react-hot-toast";
 import PostModal from "../../../components/PostModal";
 import PostDetailsModal from "./PostDetailsModal";
 import MarkdownRenderer from "../../Blog/components/common/MarkdownRenderer";
+import API_BASE_URL from "../../../config/api";
 
 const Profile = () => {
   const [user, setUser] = useState(null);
@@ -24,8 +25,6 @@ const Profile = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingPost, setEditingPost] = useState(null);
   const navigate = useNavigate();
-
-  const API_BASE = "http://localhost:5009/api";
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -57,7 +56,7 @@ const Profile = () => {
       setLoading(true);
 
       // Fetch all posts and filter by author
-      const response = await fetch(`${API_BASE}/blogposts`, {
+      const response = await fetch(`${API_BASE_URL}/blogposts`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
