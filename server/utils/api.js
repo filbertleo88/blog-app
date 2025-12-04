@@ -7,9 +7,3 @@ const api = axios.create({
 });
 
 export default api;
-
-// Then in your components
-import api from "../utils/api";
-
-// Use like this:
-const response = await api.get(`/blogposts/tag/${tag}`);
