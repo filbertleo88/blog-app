@@ -124,54 +124,138 @@ export const login = async (req, res) => {
   }
 };
 
-// Google OAuth Callback - WITH AVATAR SUPPORT
+// // Google OAuth Callback - WITH AVATAR SUPPORT
+// Google OAuth Callback - WITH AVATAR SUPPORT (REVISED)
 export const googleAuthCallback = async (req, res) => {
   try {
-    console.log("Google OAuth callback - user:", req.user);
+    console.log("✅ Google OAuth callback triggered");
+    console.log("   User data received:", req.user ? "Yes" : "No");
 
     if (!req.user) {
-      console.error("No user data in Google OAuth callback");
-      return res.redirect(`${process.env.FRONTEND_URL}/?auth=error&message=Authentication failed`);
+      console.error("❌ No user data in Google OAuth callback");
+      return res.redirect(`${process.env.FRONTEND_URL || "http://localhost:3000"}/login?error=no_user_data`);
     }
 
+    // Log user info for debugging
+    console.log("   User ID:", req.user._id);
+    console.log("   User email:", req.user.email);
+    console.log("   User avatar:", req.user.avatar ? "Exists" : "No avatar");
+
+    // Generate JWT token
     const token = generateToken(req.user._id);
+    console.log("   Token generated:", token ? "Yes" : "No");
 
-    // Store avatar in temporary session storage (Redis or in-memory)
-    const authSession = {
-      userId: req.user._id.toString(),
-      avatar: req.user.avatar, // Store avatar separately
-      expires: Date.now() + 5 * 60 * 1000, // 5 minutes expiry
-    };
-
-    // Simple in-memory storage (for development)
-    // In production, use Redis or database
-    global.authSessions = global.authSessions || new Map();
-    const sessionId = `auth_${req.user._id}_${Date.now()}`;
-    global.authSessions.set(sessionId, authSession);
-
-    // Minimal data in URL
-    const minimalUserData = {
-      id: req.user._id,
+    // Create user data for frontend
+    const userData = {
+      id: req.user._id.toString(),
       name: req.user.name,
       email: req.user.email,
+      avatar: req.user.avatar || "", // Include avatar directly if not too large
       authProvider: req.user.authProvider || "google",
-      role: req.user.role,
-      sessionId: sessionId, // Pass session ID to retrieve avatar
+      role: req.user.role || "user",
     };
 
-    const encodedUserData = encodeURIComponent(JSON.stringify(minimalUserData));
-    const redirectUrl = `${process.env.FRONTEND_URL}/?auth=success&token=${token}&user=${encodedUserData}`;
+    // For development, use in-memory storage
+    // For production, consider using:
+    // 1. Redis (recommended)
+    // 2. JWT token with avatar data
+    // 3. Temporary database collection
 
-    console.log("Google OAuth successful, redirecting with avatar session");
-    console.log("Avatar stored in session:", sessionId);
+    const sessionId = crypto.randomBytes(16).toString("hex");
+
+    // Store avatar in temporary session (5 minute expiry)
+    global.authSessions = global.authSessions || new Map();
+    global.authSessions.set(sessionId, {
+      userId: req.user._id.toString(),
+      avatar: req.user.avatar,
+      expires: Date.now() + 5 * 60 * 1000, // 5 minutes
+    });
+
+    // Cleanup old sessions (optional, for memory management)
+    if (global.authSessions.size > 100) {
+      const now = Date.now();
+      for (const [key, value] of global.authSessions.entries()) {
+        if (value.expires < now) {
+          global.authSessions.delete(key);
+        }
+      }
+    }
+
+    // Add session ID to user data
+    userData.sessionId = sessionId;
+
+    // Encode user data for URL
+    const encodedUserData = encodeURIComponent(JSON.stringify(userData));
+
+    // Create redirect URL with token and user data
+    const redirectUrl = `${process.env.FRONTEND_URL || "http://localhost:3000"}/auth/callback?token=${token}&user=${encodedUserData}`;
+
+    console.log("✅ Google OAuth successful");
+    console.log("   Redirecting to:", redirectUrl.replace(token, "TOKEN_HIDDEN"));
+    console.log("   Session ID:", sessionId);
+    console.log("   Avatar URL:", req.user.avatar || "No avatar");
 
     res.redirect(redirectUrl);
   } catch (error) {
-    console.error("Google auth callback error:", error);
-    const errorUrl = `${process.env.FRONTEND_URL}/?auth=error&message=${encodeURIComponent(error.message || "Authentication failed")}`;
+    console.error("❌ Google auth callback error:", error);
+
+    // Create error redirect URL
+    const errorMessage = encodeURIComponent(error.message || "Google authentication failed");
+
+    const errorUrl = `${process.env.FRONTEND_URL || "http://localhost:3000"}/login?error=google_auth_failed&message=${errorMessage}`;
+
+    console.log("   Redirecting to error page:", errorUrl);
     res.redirect(errorUrl);
   }
 };
+
+// export const googleAuthCallback = async (req, res) => {
+//   try {
+//     console.log("Google OAuth callback - user:", req.user);
+
+//     if (!req.user) {
+//       console.error("No user data in Google OAuth callback");
+//       return res.redirect(`${process.env.FRONTEND_URL}/?auth=error&message=Authentication failed`);
+//     }
+
+//     const token = generateToken(req.user._id);
+
+//     // Store avatar in temporary session storage (Redis or in-memory)
+//     const authSession = {
+//       userId: req.user._id.toString(),
+//       avatar: req.user.avatar, // Store avatar separately
+//       expires: Date.now() + 5 * 60 * 1000, // 5 minutes expiry
+//     };
+
+//     // Simple in-memory storage (for development)
+//     // In production, use Redis or database
+//     global.authSessions = global.authSessions || new Map();
+//     const sessionId = `auth_${req.user._id}_${Date.now()}`;
+//     global.authSessions.set(sessionId, authSession);
+
+//     // Minimal data in URL
+//     const minimalUserData = {
+//       id: req.user._id,
+//       name: req.user.name,
+//       email: req.user.email,
+//       authProvider: req.user.authProvider || "google",
+//       role: req.user.role,
+//       sessionId: sessionId, // Pass session ID to retrieve avatar
+//     };
+
+//     const encodedUserData = encodeURIComponent(JSON.stringify(minimalUserData));
+//     const redirectUrl = `${process.env.FRONTEND_URL}/?auth=success&token=${token}&user=${encodedUserData}`;
+
+//     console.log("Google OAuth successful, redirecting with avatar session");
+//     console.log("Avatar stored in session:", sessionId);
+
+//     res.redirect(redirectUrl);
+//   } catch (error) {
+//     console.error("Google auth callback error:", error);
+//     const errorUrl = `${process.env.FRONTEND_URL}/?auth=error&message=${encodeURIComponent(error.message || "Authentication failed")}`;
+//     res.redirect(errorUrl);
+//   }
+// };
 
 // Get Current User - ADD THIS FUNCTION
 export const getCurrentUser = async (req, res) => {

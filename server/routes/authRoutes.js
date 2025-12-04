@@ -351,13 +351,14 @@ router.get(
   passport.authenticate("google", {
     scope: ["profile", "email"],
     session: false,
+    prompt: "select_account", // Optional: forces account selection
   })
 );
 
 router.get(
   "/google/callback",
   passport.authenticate("google", {
-    failureRedirect: `${process.env.FRONTEND_URL}/?auth=error`,
+    failureRedirect: `${process.env.FRONTEND_URL || "http://localhost:3000"}/login?error=google_auth_failed`,
     session: false,
   }),
   googleAuthCallback
