@@ -1,26 +1,29 @@
-// api/index.js - For Vercel Serverless Functions
+// api/index.js
 import app from "../server.js";
 import connectDB from "../config/db.js";
 
-// Connect to database on cold start
+// Global variable to track DB connection
 let isConnected = false;
 
 export default async function handler(req, res) {
-  // Connect to database on first request
+  console.log(`${req.method} ${req.url}`);
+
+  // Connect to database on first request (cold start)
   if (!isConnected) {
     try {
+      console.log("🌐 Connecting to MongoDB...");
       await connectDB();
       isConnected = true;
-      console.log("✅ Database connected on serverless function");
+      console.log("✅ MongoDB connected successfully");
     } catch (error) {
-      console.error("❌ Database connection failed:", error);
+      console.error("❌ MongoDB connection failed:", error.message);
       return res.status(500).json({
         error: "Database connection failed",
-        details: error.message,
+        message: error.message,
       });
     }
   }
 
-  // Pass request to Express app
+  // Pass the request to Express app
   return app(req, res);
 }
