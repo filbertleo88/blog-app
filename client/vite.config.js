@@ -8,7 +8,7 @@ export default defineConfig({
   server: {
     proxy: {
       "/api": {
-        target: "https://blog-app-backend-virid.vercel.app",
+        target: "blog-app-backend-c1w2an7jf-filbertleo88s-projects.vercel.app",
         changeOrigin: true,
         secure: false,
       },
