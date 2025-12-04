@@ -342,6 +342,12 @@ router.post("/resend-otp", async (req, res) => {
 // Google OAuth
 router.get(
   "/google",
+  (req, res, next) => {
+    console.log("🔍 Starting Google OAuth flow...");
+    console.log("   Client ID:", process.env.GOOGLE_CLIENT_ID ? "Set" : "Missing");
+    console.log("   Callback URL:", "/api/auth/google/callback");
+    next();
+  },
   passport.authenticate("google", {
     scope: ["profile", "email"],
     session: false,
