@@ -9,7 +9,7 @@ import SearchPosts from "./pages/Blog/components/SearchPosts";
 import FloatingButton from "./components/FloatingButton";
 import PostModal from "./components/PostModal";
 import AuthModal from "./components/Auth/AuthModal";
-import AuthSuccessPage from "./pages/AuthSuccessPage";
+import AuthSuccessPage from "./components/Auth/AuthSuccessPage";
 import Profile from "./pages/Admin/components/Profile";
 import BlogPosts from "./pages/Admin/components/BlogPosts";
 import Comments from "./pages/Admin/components/Comments";
