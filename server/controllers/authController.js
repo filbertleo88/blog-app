@@ -2,6 +2,7 @@
 import User from "../models/User.js";
 import jwt from "jsonwebtoken";
 import generateToken from "../utils/generateToken.js";
+import crypto from "crypto"; // ADD THIS IMPORT AT THE TOP
 
 // Register with email/password
 export const register = async (req, res) => {
@@ -124,8 +125,7 @@ export const login = async (req, res) => {
   }
 };
 
-// // Google OAuth Callback - WITH AVATAR SUPPORT
-// Google OAuth Callback - WITH AVATAR SUPPORT (REVISED)
+// Google OAuth Callback - FIXED VERSION
 export const googleAuthCallback = async (req, res) => {
   try {
     console.log("✅ Google OAuth callback triggered");
@@ -150,18 +150,13 @@ export const googleAuthCallback = async (req, res) => {
       id: req.user._id.toString(),
       name: req.user.name,
       email: req.user.email,
-      avatar: req.user.avatar || "", // Include avatar directly if not too large
+      avatar: req.user.avatar || "",
       authProvider: req.user.authProvider || "google",
       role: req.user.role || "user",
     };
 
-    // For development, use in-memory storage
-    // For production, consider using:
-    // 1. Redis (recommended)
-    // 2. JWT token with avatar data
-    // 3. Temporary database collection
-
-    const sessionId = crypto.randomBytes(16).toString("hex");
+    // Generate a simple session ID without crypto.randomBytes
+    const sessionId = `session_${req.user._id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
     // Store avatar in temporary session (5 minute expiry)
     global.authSessions = global.authSessions || new Map();
@@ -209,55 +204,7 @@ export const googleAuthCallback = async (req, res) => {
   }
 };
 
-// export const googleAuthCallback = async (req, res) => {
-//   try {
-//     console.log("Google OAuth callback - user:", req.user);
-
-//     if (!req.user) {
-//       console.error("No user data in Google OAuth callback");
-//       return res.redirect(`${process.env.FRONTEND_URL}/?auth=error&message=Authentication failed`);
-//     }
-
-//     const token = generateToken(req.user._id);
-
-//     // Store avatar in temporary session storage (Redis or in-memory)
-//     const authSession = {
-//       userId: req.user._id.toString(),
-//       avatar: req.user.avatar, // Store avatar separately
-//       expires: Date.now() + 5 * 60 * 1000, // 5 minutes expiry
-//     };
-
-//     // Simple in-memory storage (for development)
-//     // In production, use Redis or database
-//     global.authSessions = global.authSessions || new Map();
-//     const sessionId = `auth_${req.user._id}_${Date.now()}`;
-//     global.authSessions.set(sessionId, authSession);
-
-//     // Minimal data in URL
-//     const minimalUserData = {
-//       id: req.user._id,
-//       name: req.user.name,
-//       email: req.user.email,
-//       authProvider: req.user.authProvider || "google",
-//       role: req.user.role,
-//       sessionId: sessionId, // Pass session ID to retrieve avatar
-//     };
-
-//     const encodedUserData = encodeURIComponent(JSON.stringify(minimalUserData));
-//     const redirectUrl = `${process.env.FRONTEND_URL}/?auth=success&token=${token}&user=${encodedUserData}`;
-
-//     console.log("Google OAuth successful, redirecting with avatar session");
-//     console.log("Avatar stored in session:", sessionId);
-
-//     res.redirect(redirectUrl);
-//   } catch (error) {
-//     console.error("Google auth callback error:", error);
-//     const errorUrl = `${process.env.FRONTEND_URL}/?auth=error&message=${encodeURIComponent(error.message || "Authentication failed")}`;
-//     res.redirect(errorUrl);
-//   }
-// };
-
-// Get Current User - ADD THIS FUNCTION
+// Get Current User
 export const getCurrentUser = async (req, res) => {
   try {
     const user = await User.findById(req.userId).select("-password");
@@ -291,7 +238,7 @@ export const getCurrentUser = async (req, res) => {
   }
 };
 
-// Update User Profile - ADD THIS FUNCTION
+// Update User Profile
 export const updateProfile = async (req, res) => {
   try {
     const { name, email, avatar } = req.body;

@@ -6,7 +6,6 @@ import { register, login, googleAuthCallback, getCurrentUser, updateProfile, tes
 import { protect } from "../middleware/authMiddleware.js";
 import User from "../models/User.js";
 import nodemailer from "nodemailer";
-import crypto from "crypto";
 
 const router = express.Router();
 
@@ -22,9 +21,10 @@ const transporter = nodemailer.createTransport({
 // Store OTPs temporarily (in production, use Redis)
 const otpStore = new Map();
 
-// Generate 6-digit OTP
+// Generate 6-digit OTP without using crypto.randomBytes
 const generateOTP = () => {
-  return crypto.randomInt(100000, 999999).toString();
+  // Generate a random 6-digit number
+  return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
 // Local authentication
@@ -98,7 +98,7 @@ router.post("/forgot-password", async (req, res) => {
   }
 });
 
-// Reset Password with OTP - FIXED VERSION
+// Reset Password with OTP
 router.post("/reset-password", async (req, res) => {
   try {
     const { email, otp, newPassword } = req.body;
@@ -160,51 +160,25 @@ router.post("/reset-password", async (req, res) => {
     }
 
     console.log("✅ User found:", user.email);
-    console.log("   Current password hash:", user.password ? "***" + user.password.slice(-8) : "none");
 
     // Hash new password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(newPassword, salt);
 
-    console.log("   New password hash to save:", "***" + hashedPassword.slice(-8));
-
     // Update user password
     user.password = hashedPassword;
-
-    // Save and wait for completion
     await user.save();
+
     console.log("✅ User saved successfully");
 
     // Remove used OTP
     otpStore.delete(email);
 
-    // 🔄 FIX: Force a fresh database query to verify the update
+    // Verify the update
     const updatedUser = await User.findOne({ email }).select("password");
-
-    if (!updatedUser) {
-      console.log("❌ Could not find updated user");
-      return res.status(500).json({
-        success: false,
-        message: "Password update verification failed",
-      });
-    }
-
-    console.log("   Fresh user password hash:", updatedUser.password ? "***" + updatedUser.password.slice(-8) : "none");
-
-    // Verify the update by comparing with the freshly fetched user
     const isPasswordUpdated = await bcrypt.compare(newPassword, updatedUser.password);
 
     console.log("🔍 Password update verification:", isPasswordUpdated ? "SUCCESS" : "FAILED");
-
-    if (!isPasswordUpdated) {
-      console.log("❌ Password verification failed - hashes don't match");
-      console.log("   Input password:", newPassword);
-      console.log("   Stored hash:", updatedUser.password);
-
-      // Additional debug: compare with the original hashed password
-      const directComparison = await bcrypt.compare(newPassword, hashedPassword);
-      console.log("   Direct comparison with original hash:", directComparison);
-    }
 
     res.json({
       success: true,
@@ -221,7 +195,7 @@ router.post("/reset-password", async (req, res) => {
   }
 });
 
-// Verify OTP (optional endpoint for frontend validation)
+// Verify OTP
 router.post("/verify-otp", async (req, res) => {
   try {
     const { email, otp } = req.body;
@@ -345,13 +319,13 @@ router.get(
   (req, res, next) => {
     console.log("🔍 Starting Google OAuth flow...");
     console.log("   Client ID:", process.env.GOOGLE_CLIENT_ID ? "Set" : "Missing");
-    console.log("   Callback URL:", "/api/auth/google/callback");
+    console.log("   Callback URL:", process.env.GOOGLE_CALLBACK_URL);
     next();
   },
   passport.authenticate("google", {
     scope: ["profile", "email"],
     session: false,
-    prompt: "select_account", // Optional: forces account selection
+    prompt: "select_account",
   })
 );
 
