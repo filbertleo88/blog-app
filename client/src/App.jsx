@@ -9,6 +9,7 @@ import SearchPosts from "./pages/Blog/components/SearchPosts";
 import FloatingButton from "./components/FloatingButton";
 import PostModal from "./components/PostModal";
 import AuthModal from "./components/Auth/AuthModal";
+import AuthSuccessPage from "./pages/AuthSuccessPage";
 import Profile from "./pages/Admin/components/Profile";
 import BlogPosts from "./pages/Admin/components/BlogPosts";
 import Comments from "./pages/Admin/components/Comments";
@@ -227,6 +228,16 @@ const App = () => {
               element={
                 <BlogLayout user={user} posts={posts}>
                   <div className="min-h-screen"></div>
+                </BlogLayout>
+              }
+            />
+
+            {/* Google OAuth Success Callback Route */}
+            <Route
+              path="/auth/callback"
+              element={
+                <BlogLayout user={user} posts={posts}>
+                  <AuthSuccessPage />
                 </BlogLayout>
               }
             />

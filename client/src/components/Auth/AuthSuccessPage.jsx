@@ -1,9 +1,13 @@
+// src/pages/AuthSuccessPage.jsx
 import React, { useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext"; // Add this
+import { toast } from "react-hot-toast"; // Add this
 
 const AuthSuccessPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { login } = useAuth(); // Add this
 
   useEffect(() => {
     const token = searchParams.get("token");
@@ -11,24 +15,28 @@ const AuthSuccessPage = () => {
 
     if (token && user) {
       try {
-        // Store in localStorage
-        localStorage.setItem("token", token);
-        localStorage.setItem("user", user);
+        // Parse the user data
+        const userData = JSON.parse(decodeURIComponent(user));
 
-        console.log("OAuth successful - token stored");
+        // Use your auth context login function
+        login(userData, token);
+
+        toast.success(`Welcome, ${userData.name}!`);
+
+        console.log("OAuth successful - user logged in");
 
         // Redirect to home page after a short delay
         setTimeout(() => {
           navigate("/");
-        }, 2000);
+        }, 1500);
       } catch (error) {
         console.error("Error processing OAuth success:", error);
-        navigate("/auth/error?message=Error processing authentication");
+        navigate("/login?error=auth_failed");
       }
     } else {
-      navigate("/auth/error?message=Missing authentication data");
+      navigate("/login?error=missing_data");
     }
-  }, [searchParams, navigate]);
+  }, [searchParams, navigate, login]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">

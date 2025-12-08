@@ -184,6 +184,8 @@ export const googleAuthCallback = async (req, res) => {
 
     // Create redirect URL with token and user data
     const redirectUrl = `${process.env.FRONTEND_URL || "http://localhost:3000"}/auth/callback?token=${token}&user=${encodedUserData}`;
+    // const redirectUrl = `${process.env.FRONTEND_URL || "http://localhost:3000"}/auth/success?token=${token}&user=${encodedUserData}`;
+    // const redirectUrl = `${process.env.FRONTEND_URL || "http://localhost:3000"}/login?google_success=true&token=${token}&user=${encodedUserData}`;
 
     console.log("✅ Google OAuth successful");
     console.log("   Redirecting to:", redirectUrl.replace(token, "TOKEN_HIDDEN"));
