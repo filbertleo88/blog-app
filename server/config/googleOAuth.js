@@ -70,8 +70,9 @@ export const googleStrategy = new GoogleStrategy(
   {
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: process.env.NODE_ENV === "production" ? "https://blog-app-backend-virid.vercel.app/api/auth/google/callback" : "http://localhost:5009/api/auth/google/callback",
-    scope: ["profile", "email"], // ADD THIS LINE
+    // Use environment variable for callback URL
+    callbackURL: process.env.GOOGLE_CALLBACK_URL || "http://localhost:5009/api/auth/google/callback",
+    scope: ["profile", "email"],
     passReqToCallback: false,
   },
   async (accessToken, refreshToken, profile, done) => {
@@ -98,17 +99,17 @@ export const googleStrategy = new GoogleStrategy(
         user = await User.create({
           name: profile.displayName || "Google User",
           email: email,
-          avatar: avatarUrl, // Store URL, not base64 data
+          avatar: avatarUrl,
           password: await bcrypt.hash(Math.random().toString(36) + Date.now(), 10),
           googleId: profile.id,
-          authProvider: "google", // Add this field
+          authProvider: "google",
         });
         console.log("New user created via Google OAuth:", user.email);
       } else {
         // Update existing user with Google ID if not set
         if (!user.googleId) {
           user.googleId = profile.id;
-          user.authProvider = "google"; // Update auth provider
+          user.authProvider = "google";
 
           // Update avatar if empty and Google has one
           if (!user.avatar && profile.photos && profile.photos[0]) {

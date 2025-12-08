@@ -4,16 +4,16 @@ import { HiOutlineMenu, HiOutlineX } from "react-icons/hi";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { LuSearch as MagnifyingGlassIcon } from "react-icons/lu";
 import AuthModal from "../../Auth/AuthModal";
-import { useAuth } from "../../../contexts/AuthContext"; // Add this import
+import { useAuth } from "../../../contexts/AuthContext";
 
 const BlogNavbar = ({ activeMenu, posts }) => {
-  // Remove user prop
-  const { user: currentUser, logout: authLogout } = useAuth(); // Use auth context
+  const { user: currentUser, logout: authLogout } = useAuth();
   const [openSideMenu, setOpenSideMenu] = useState(false);
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authView, setAuthView] = useState("login");
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -34,7 +34,6 @@ const BlogNavbar = ({ activeMenu, posts }) => {
   // Generate top 5 tags dynamically from posts
   const top5Tags = useMemo(() => {
     try {
-      console.log("Raw posts data:", posts);
       let postsArray = [];
 
       if (Array.isArray(posts)) {
@@ -46,10 +45,7 @@ const BlogNavbar = ({ activeMenu, posts }) => {
         else if (Array.isArray(posts.results)) postsArray = posts.results;
       }
 
-      console.log("Extracted posts array:", postsArray);
-
       if (!postsArray || !Array.isArray(postsArray) || postsArray.length === 0) {
-        console.log("No posts available for tag generation");
         return [];
       }
 
@@ -64,8 +60,6 @@ const BlogNavbar = ({ activeMenu, posts }) => {
         }
       });
 
-      console.log("Collected tags:", allTags);
-
       if (allTags.length === 0) {
         return [];
       }
@@ -76,10 +70,7 @@ const BlogNavbar = ({ activeMenu, posts }) => {
       });
 
       const sortedTags = Object.keys(tagCounts).sort((a, b) => tagCounts[b] - tagCounts[a]);
-      const topTags = sortedTags.slice(0, 5);
-
-      console.log("Final top tags:", topTags);
-      return topTags;
+      return sortedTags.slice(0, 5);
     } catch (error) {
       console.error("Error in tag generation:", error);
       return [];
@@ -127,7 +118,8 @@ const BlogNavbar = ({ activeMenu, posts }) => {
   };
 
   const handleLogout = () => {
-    authLogout(); // Use auth context logout
+    authLogout();
+    setShowUserDropdown(false);
     navigate("/");
   };
 
@@ -146,7 +138,6 @@ const BlogNavbar = ({ activeMenu, posts }) => {
   };
 
   const handleAuthSuccess = (userData) => {
-    // No need to set currentUser here - AuthContext will handle it
     setIsAuthModalOpen(false);
     navigate("/");
   };
@@ -154,6 +145,10 @@ const BlogNavbar = ({ activeMenu, posts }) => {
   const handleViewSwitch = (view) => {
     setAuthView(view);
     navigate(view === "login" ? "/login" : "/register", { replace: true });
+  };
+
+  const toggleUserDropdown = () => {
+    setShowUserDropdown(!showUserDropdown);
   };
 
   return (
@@ -215,13 +210,18 @@ const BlogNavbar = ({ activeMenu, posts }) => {
 
             {/* User Auth Section */}
             {currentUser ? (
-              <div className="flex items-center gap-3">
+              <div className="relative">
                 {isDashboardPage ? (
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium text-gray-700">Welcome, {getUserName()}</span>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2 bg-gray-50 rounded-full pl-2 pr-4 py-1 hover:bg-gray-100 transition-colors cursor-pointer group relative">
+                  <div
+                    className="flex items-center gap-2 bg-gray-50 rounded-full pl-2 pr-4 py-1 hover:bg-gray-100 transition-colors cursor-pointer"
+                    onClick={toggleUserDropdown}
+                    onMouseEnter={() => setShowUserDropdown(true)}
+                    onMouseLeave={() => setShowUserDropdown(false)}
+                  >
                     {getUserAvatar() ? (
                       <img src={getUserAvatar()} alt={getUserName()} className="w-8 h-8 rounded-full object-cover" />
                     ) : (
@@ -232,37 +232,39 @@ const BlogNavbar = ({ activeMenu, posts }) => {
                     <span className="text-sm font-medium text-gray-700 hidden sm:block">{getUserName()}</span>
 
                     {/* Dropdown Menu */}
-                    <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                      <div className="p-3 border-b border-gray-100">
-                        <p className="text-sm font-medium text-gray-800">{getUserName()}</p>
-                        <p className="text-xs text-gray-500 truncate">{getUserEmail()}</p>
+                    {showUserDropdown && (
+                      <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50" onMouseEnter={() => setShowUserDropdown(true)} onMouseLeave={() => setShowUserDropdown(false)}>
+                        <div className="p-3 border-b border-gray-100">
+                          <p className="text-sm font-medium text-gray-800">{getUserName()}</p>
+                          <p className="text-xs text-gray-500 truncate">{getUserEmail()}</p>
+                        </div>
+                        <div className="p-1">
+                          <Link to="/profile" className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors" onClick={() => setShowUserDropdown(false)}>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                            My Profile
+                          </Link>
+                          <Link to="/blog-posts" className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors" onClick={() => setShowUserDropdown(false)}>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9m0 0v12m0-12a2 2 0 012-2h2a2 2 0 012 2m-6 9v-2"
+                              />
+                            </svg>
+                            My Posts
+                          </Link>
+                          <button onClick={handleLogout} className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md transition-colors mt-1">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                            </svg>
+                            Logout
+                          </button>
+                        </div>
                       </div>
-                      <div className="p-1">
-                        <Link to="/profile" className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors" onClick={() => setOpenSideMenu(false)}>
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                          </svg>
-                          My Profile
-                        </Link>
-                        <Link to="/blog-posts" className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors" onClick={() => setOpenSideMenu(false)}>
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9m0 0v12m0-12a2 2 0 012-2h2a2 2 0 012 2m-6 9v-2"
-                            />
-                          </svg>
-                          My Posts
-                        </Link>
-                        <button onClick={handleLogout} className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md transition-colors mt-1">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                          </svg>
-                          Logout
-                        </button>
-                      </div>
-                    </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -274,64 +276,45 @@ const BlogNavbar = ({ activeMenu, posts }) => {
           </div>
         </div>
 
-        {/* MOBILE SIDE MENU */}
+        {/* MOBILE SIDE MENU - Only shows navigation links */}
         {openSideMenu && (
           <div className="md:hidden absolute top-full left-0 w-full bg-white border-b border-gray-200 shadow-lg z-50">
             <nav className="container mx-auto py-4">
+              {/* Navigation links only */}
               {menuItems.map((item, index) => (
                 <Link to={item.path} key={index} className="block py-3 px-4 text-gray-700 hover:bg-gray-50 hover:text-sky-600 transition-colors border-b border-gray-100 last:border-b-0" onClick={() => setOpenSideMenu(false)}>
                   {item.label}
                 </Link>
               ))}
 
-              {/* Mobile User Section */}
-              {currentUser ? (
-                <div className="border-t border-gray-200 mt-4 pt-4 px-4">
-                  <div className="flex items-center gap-3 mb-4">
-                    {getUserAvatar() ? (
-                      <img src={getUserAvatar()} alt={getUserName()} className="w-10 h-10 rounded-full object-cover" />
-                    ) : (
-                      <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center">
-                        <span className="text-lg text-gray-600 font-medium">{getUserName().charAt(0).toUpperCase()}</span>
+              {/* Simple mobile auth section - just Login/SignUp or Logout */}
+              <div className="border-t border-gray-200 mt-4 pt-4 px-4">
+                {currentUser ? (
+                  <>
+                    <div className="flex items-center gap-3 mb-4">
+                      {getUserAvatar() ? (
+                        <img src={getUserAvatar()} alt={getUserName()} className="w-10 h-10 rounded-full object-cover" />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center">
+                          <span className="text-lg text-gray-600 font-medium">{getUserName().charAt(0).toUpperCase()}</span>
+                        </div>
+                      )}
+                      <div>
+                        <p className="text-sm font-medium text-gray-800">{getUserName()}</p>
+                        <p className="text-xs text-gray-500">{getUserEmail()}</p>
                       </div>
-                    )}
-                    <div>
-                      <p className="text-sm font-medium text-gray-800">{getUserName()}</p>
-                      <p className="text-xs text-gray-500">{getUserEmail()}</p>
                     </div>
-                  </div>
-                  <Link to="/profile" className="flex items-center gap-2 px-3 py-3 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors mb-2" onClick={() => setOpenSideMenu(false)}>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                    My Profile
-                  </Link>
-                  <Link to="/blog-posts" className="flex items-center gap-2 px-3 py-3 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors mb-2" onClick={() => setOpenSideMenu(false)}>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9m0 0v12m0-12a2 2 0 012-2h2a2 2 0 012 2m-6 9v-2"
-                      />
-                    </svg>
-                    My Posts
-                  </Link>
-                  <button
-                    onClick={() => {
-                      handleLogout();
-                      setOpenSideMenu(false);
-                    }}
-                    className="flex items-center gap-2 w-full px-3 py-3 text-sm text-red-600 hover:bg-red-50 rounded-md transition-colors"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                    </svg>
-                    Logout
-                  </button>
-                </div>
-              ) : (
-                <div className="border-t border-gray-200 mt-4 pt-4 px-4">
+                    <button
+                      onClick={() => {
+                        handleLogout();
+                        setOpenSideMenu(false);
+                      }}
+                      className="w-full text-center py-3 bg-gradient-to-r from-red-500 to-red-400 text-white rounded-lg hover:opacity-90 transition font-medium"
+                    >
+                      Logout
+                    </button>
+                  </>
+                ) : (
                   <button
                     onClick={() => {
                       handleAuthButtonClick();
@@ -341,8 +324,8 @@ const BlogNavbar = ({ activeMenu, posts }) => {
                   >
                     Login / SignUp
                   </button>
-                </div>
-              )}
+                )}
+              </div>
             </nav>
           </div>
         )}
