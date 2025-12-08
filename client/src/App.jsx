@@ -231,7 +231,6 @@ const App = () => {
                 </BlogLayout>
               }
             />
-
             {/* Google OAuth Success Callback Route */}
             <Route
               path="/auth/callback"
@@ -241,7 +240,15 @@ const App = () => {
                 </BlogLayout>
               }
             />
-
+            // In your App.jsx, add this test route temporarily:
+            <Route
+              path="/test-auth"
+              element={
+                <div className="min-h-screen flex items-center justify-center">
+                  <h1 className="text-2xl">Test Route Working</h1>
+                </div>
+              }
+            />
             {/* Blog Routes with Floating Button */}
             <Route
               path="/"
@@ -252,7 +259,6 @@ const App = () => {
                 </div>
               }
             />
-
             <Route
               path="/blogposts/:id"
               element={
@@ -262,7 +268,6 @@ const App = () => {
                 </div>
               }
             />
-
             <Route
               path="/tag/:tag"
               element={
@@ -272,7 +277,6 @@ const App = () => {
                 </div>
               }
             />
-
             <Route
               path="/search"
               element={
@@ -282,7 +286,6 @@ const App = () => {
                 </div>
               }
             />
-
             {/* Dashboard Routes */}
             <Route
               path="/profile"
@@ -292,7 +295,6 @@ const App = () => {
                 </DashboardLayout>
               }
             />
-
             <Route
               path="/blog-posts"
               element={
@@ -301,7 +303,6 @@ const App = () => {
                 </DashboardLayout>
               }
             />
-
             <Route
               path="/comments"
               element={
