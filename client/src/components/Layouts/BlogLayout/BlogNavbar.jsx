@@ -219,8 +219,6 @@ const BlogNavbar = ({ activeMenu, posts }) => {
                   <div
                     className="flex items-center gap-2 bg-gray-50 rounded-full pl-2 pr-4 py-1 hover:bg-gray-100 transition-colors cursor-pointer"
                     onClick={toggleUserDropdown}
-                    onMouseEnter={() => setShowUserDropdown(true)}
-                    onMouseLeave={() => setShowUserDropdown(false)}
                   >
                     {getUserAvatar() ? (
                       <img src={getUserAvatar()} alt={getUserName()} className="w-8 h-8 rounded-full object-cover" />
