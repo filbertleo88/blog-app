@@ -1,7 +1,7 @@
 // src/pages/AuthSuccessPage.jsx
 import React, { useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { useAuth } from "../contexts/AuthContext"; // Add this
+import { useAuth } from "../../contexts/AuthContext"; // Add this
 import { toast } from "react-hot-toast"; // Add this
 
 const AuthSuccessPage = () => {
