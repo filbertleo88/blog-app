@@ -196,13 +196,6 @@ const App = () => {
     toast.success("Profile updated successfully!");
   };
 
-  // // Debug user state
-  // useEffect(() => {
-  //   console.log("🔄 Current user state:", user);
-  //   console.log("🔄 User has id:", user?.id);
-  //   console.log("🔄 Should show floating button:", user && user.id);
-  // }, [user]);
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
