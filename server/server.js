@@ -63,7 +63,7 @@ passport.deserializeUser(async (id, done) => {
 // Middleware
 app.use(
   cors({
-    origin: [process.env.FRONTEND_URL , process.env.BACKEND_URL , "http://localhost:5173"],
+    origin: [process.env.FRONTEND_URL, process.env.BACKEND_URL, "http://localhost:5173"],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -73,9 +73,6 @@ app.use(
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 app.use(cookieParser());
-
-// Serve static files
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // ✅ ADD A ROOT ROUTE
 app.get("/", (req, res) => {

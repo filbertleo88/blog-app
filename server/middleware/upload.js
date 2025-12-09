@@ -1,60 +1,46 @@
-import { v2 as cloudinary } from "cloudinary";
-import { CloudinaryStorage } from "multer-storage-cloudinary";
-import multer from "multer";
-import path from "path";
-import { fileURLToPath } from "url";
-import fs from "fs";
+// import { v2 as cloudinary } from "cloudinary";
+// import { CloudinaryStorage } from "multer-storage-cloudinary";
+// import multer from "multer";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// // Configure Cloudinary
+// cloudinary.config({
+//   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+//   api_key: process.env.CLOUDINARY_API_KEY,
+//   api_secret: process.env.CLOUDINARY_API_SECRET,
+// });
 
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
+// console.log("Cloudinary config check:", {
+//   cloud_name: process.env.CLOUDINARY_CLOUD_NAME ? "Set" : "Not set",
+//   api_key: process.env.CLOUDINARY_API_KEY ? "Set" : "Not set",
+// });
 
-// Configure Multer Storage
-const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: "blog-images",
-    allowed_formats: ["jpg", "jpeg", "png", "gif", "webp"],
-    transformation: [{ width: 1200, height: 630, crop: "limit" }],
-  },
-});
-
-const upload = multer({
-  storage,
-  limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB limit
-  },
-});
-
-// // Ensure uploads directory exists
-// const uploadsDir = path.join(__dirname, "../uploads");
-// if (!fs.existsSync(uploadsDir)) {
-//   fs.mkdirSync(uploadsDir, { recursive: true });
-// }
-
-// const storage = multer.diskStorage({
-//   destination: function (req, file, cb) {
-//     cb(null, uploadsDir);
-//   },
-//   filename: function (req, file, cb) {
-//     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-//     cb(null, "image-" + uniqueSuffix + path.extname(file.originalname));
+// // ✅ Configure Multer Storage with Cloudinary
+// const storage = new CloudinaryStorage({
+//   cloudinary: cloudinary,
+//   params: {
+//     folder: "blog-images",
+//     allowed_formats: ["jpg", "jpeg", "png", "gif", "webp"],
+//     transformation: [{ width: 1200, height: 630, crop: "limit" }],
+//     public_id: (req, file) => {
+//       const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+//       return uniqueSuffix;
+//     },
 //   },
 // });
 
+// // Test Cloudinary connection
+// cloudinary.api.ping()
+//   .then(result => console.log("Cloudinary connection test:", result))
+//   .catch(err => console.error("Cloudinary connection error:", err));
+
 // const upload = multer({
-//   storage: storage,
+//   storage: storage, // Make sure this is CloudinaryStorage
 //   limits: {
-//     fileSize: 10 * 1024 * 1024, // 10MB limit
+//     fileSize: 5 * 1024 * 1024, // 5MB limit
 //   },
 //   fileFilter: function (req, file, cb) {
 //     const allowedTypes = /jpeg|jpg|png|gif|webp/;
-//     const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+//     const extname = allowedTypes.test(file.originalname.toLowerCase());
 //     const mimetype = allowedTypes.test(file.mimetype);
 
 //     if (mimetype && extname) {
@@ -65,5 +51,4 @@ const upload = multer({
 //   },
 // });
 
-// Export the multer instance directly, not as an object
-export default upload;
+// export default upload;

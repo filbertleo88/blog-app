@@ -67,26 +67,65 @@ const PostModal = ({ isOpen, onClose, onSubmit, initialData, currentUser }) => {
     formData.append("image", file);
 
     try {
-      console.log("Uploading image...", file.name);
+      console.log("Uploading image:", file.name);
+      console.log("API Base URL:", API_BASE_URL);
 
-      const response = await fetch(`${API_BASE_URL}/upload`, {
+      // First, try the main upload endpoint which uses Cloudinary
+      const mainUploadUrl = `${API_BASE_URL}/upload`;
+      console.log("Trying main upload at:", mainUploadUrl);
+
+      const response = await fetch(mainUploadUrl, {
         method: "POST",
         body: formData,
+        // Don't set Content-Type header - let browser set it with boundary
       });
 
-      console.log("Upload response status:", response.status);
+      console.log("Response status:", response.status);
 
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Upload failed:", errorText);
-        throw new Error(`Failed to upload image: ${response.status} - ${errorText}`);
+        throw new Error(`Upload failed with status: ${response.status}`);
       }
 
       const data = await response.json();
       console.log("Upload successful:", data);
-      return data.imageUrl;
+
+      // Check if we got a Cloudinary URL or local URL
+      if (data.imageUrl && data.imageUrl.includes("cloudinary.com")) {
+        // This is a Cloudinary URL
+        return data.imageUrl;
+      } else if (data.cloudinary && data.cloudinary.url) {
+        // This is from the fixed uploadRoute that includes cloudinary.url
+        return data.cloudinary.url;
+      } else if (data.imageUrl) {
+        // Fallback to whatever URL we got
+        console.warn("Got non-Cloudinary URL, using fallback:", data.imageUrl);
+        return data.imageUrl;
+      } else {
+        throw new Error("No image URL in response");
+      }
     } catch (error) {
       console.error("Error uploading image:", error);
+
+      // Optional: You could add a fallback to a different endpoint here if needed
+      // For example:
+      /*
+    console.log("Trying fallback upload...");
+    try {
+      const fallbackResponse = await fetch(`${API_BASE_URL}/api/upload`, {
+        method: "POST",
+        body: formData,
+      });
+      
+      if (!fallbackResponse.ok) throw new Error("Fallback upload failed");
+      
+      const fallbackData = await fallbackResponse.json();
+      return fallbackData.imageUrl;
+    } catch (fallbackError) {
+      console.error("Fallback upload also failed:", fallbackError);
+      throw new Error("All upload methods failed");
+    }
+    */
+
       throw error;
     }
   };
