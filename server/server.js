@@ -126,7 +126,7 @@ app.use("*", (req, res) => {
   });
 });
 
-// ✅ Export the app for Vercel (NO app.listen here!)
+// ✅ Export the app for Vercel 
 export default app;
 
 // ✅ Only start server if running locally

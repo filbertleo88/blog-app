@@ -77,7 +77,6 @@ const PostModal = ({ isOpen, onClose, onSubmit, initialData, currentUser }) => {
       const response = await fetch(mainUploadUrl, {
         method: "POST",
         body: formData,
-        // Don't set Content-Type header - let browser set it with boundary
       });
 
       console.log("Response status:", response.status);
@@ -105,26 +104,6 @@ const PostModal = ({ isOpen, onClose, onSubmit, initialData, currentUser }) => {
       }
     } catch (error) {
       console.error("Error uploading image:", error);
-
-      // Optional: You could add a fallback to a different endpoint here if needed
-      // For example:
-      /*
-    console.log("Trying fallback upload...");
-    try {
-      const fallbackResponse = await fetch(`${API_BASE_URL}/api/upload`, {
-        method: "POST",
-        body: formData,
-      });
-      
-      if (!fallbackResponse.ok) throw new Error("Fallback upload failed");
-      
-      const fallbackData = await fallbackResponse.json();
-      return fallbackData.imageUrl;
-    } catch (fallbackError) {
-      console.error("Fallback upload also failed:", fallbackError);
-      throw new Error("All upload methods failed");
-    }
-    */
 
       throw error;
     }
