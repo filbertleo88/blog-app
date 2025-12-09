@@ -63,7 +63,7 @@ passport.deserializeUser(async (id, done) => {
 // Middleware
 app.use(
   cors({
-    origin: ['https://inskpire-blog-app-git-update-blog-schema-filbertleo88s-projects.vercel.app',process.env.FRONTEND_URL , process.env.BACKEND_URL , "http://localhost:5173"],
+    origin: [process.env.FRONTEND_URL , process.env.BACKEND_URL , "http://localhost:5173"],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],

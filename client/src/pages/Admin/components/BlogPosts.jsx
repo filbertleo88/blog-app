@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Toaster, toast } from "react-hot-toast";
 import PostModal from "../../../components/PostModal";
+import API_BASE_URL_URL from "../../../config/api";
 import API_BASE_URL from "../../../config/api";
 
 const BlogPosts = () => {
@@ -30,7 +31,7 @@ const BlogPosts = () => {
       }
 
       // Fetch all posts and filter by author_id on frontend
-      const response = await fetch(`${API_BASE_URL}/blogposts`, {
+      const response = await fetch(`${API_BASE_URL_URL}/blogposts`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -106,7 +107,7 @@ const BlogPosts = () => {
 
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(`${API_BASE}/blogposts/${postId}`, {
+      const response = await fetch(`${API_BASE_URL}/blogposts/${postId}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -138,7 +139,7 @@ const BlogPosts = () => {
         return;
       }
 
-      const response = await fetch(`${API_BASE}/blogposts/${postId}`, {
+      const response = await fetch(`${API_BASE_URL}/blogposts/${postId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -173,7 +174,7 @@ const BlogPosts = () => {
         return;
       }
 
-      const response = await fetch(`${API_BASE}/blogposts/${postId}`, {
+      const response = await fetch(`${API_BASE_URL}/blogposts/${postId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -222,7 +223,7 @@ const BlogPosts = () => {
         }
 
         // Update existing post
-        response = await fetch(`${API_BASE}/blogposts/${editingPost._id}`, {
+        response = await fetch(`${API_BASE_URL}/blogposts/${editingPost._id}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
@@ -232,7 +233,7 @@ const BlogPosts = () => {
         });
       } else {
         // Create new post
-        response = await fetch(`${API_BASE}/blogposts`, {
+        response = await fetch(`${API_BASE_URL}/blogposts`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
