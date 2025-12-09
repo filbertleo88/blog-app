@@ -1,6 +1,6 @@
-// App.jsx
+// App.jsx - Updated to handle Google OAuth on homepage
 import React, { useState, useEffect } from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, useSearchParams } from "react-router-dom";
 import { Toaster, toast } from "react-hot-toast";
 import BlogLandingPage from "./pages/Blog/components/BlogLandingPage";
 import BlogPostView from "./pages/Blog/components/BlogPostView";
@@ -9,7 +9,6 @@ import SearchPosts from "./pages/Blog/components/SearchPosts";
 import FloatingButton from "./components/FloatingButton";
 import PostModal from "./components/PostModal";
 import AuthModal from "./components/Auth/AuthModal";
-import AuthSuccessPage from "./components/Auth/AuthSuccessPage";
 import Profile from "./pages/Admin/components/Profile";
 import BlogPosts from "./pages/Admin/components/BlogPosts";
 import Comments from "./pages/Admin/components/Comments";
@@ -18,6 +17,86 @@ import ScrollToTop from "./components/ScrollToTop";
 import BlogLayout from "./components/Layouts/BlogLayout/BlogLayout";
 import { AuthProvider } from "./contexts/AuthContext";
 import API_BASE_URL from "./config/api";
+
+// Wrapper component to handle Google OAuth
+const HomePageWithAuth = ({ user, posts, handleOpenModal }) => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  useEffect(() => {
+    const handleGoogleAuth = async () => {
+      const googleAuth = searchParams.get("google_auth");
+      const sessionId = searchParams.get("session");
+
+      if (googleAuth === "success" && sessionId && !isProcessing) {
+        setIsProcessing(true);
+        console.log("🔍 Processing Google Auth session:", sessionId);
+
+        try {
+          // Show loading toast
+          const loadingToast = toast.loading("Completing sign in...");
+
+          // Fetch session data from backend
+          const response = await fetch(`${API_BASE_URL}/auth/google-session?session=${sessionId}`);
+
+          if (!response.ok) {
+            throw new Error("Failed to retrieve session");
+          }
+
+          const data = await response.json();
+
+          if (data.success) {
+            // Store token and user data
+            localStorage.setItem("token", data.token);
+            localStorage.setItem("user", JSON.stringify(data.user));
+
+            // Dismiss loading toast
+            toast.dismiss(loadingToast);
+            toast.success(`Welcome back, ${data.user.name}! 🎉`);
+
+            // Clean up URL
+            setSearchParams({});
+
+            // Reload to update app state
+            window.location.href = "/";
+          } else {
+            throw new Error(data.message || "Authentication failed");
+          }
+        } catch (error) {
+          console.error("❌ Google auth error:", error);
+          toast.error("Sign in failed: " + error.message);
+          setSearchParams({});
+        } finally {
+          setIsProcessing(false);
+        }
+      } else if (googleAuth === "failed") {
+        toast.error("Google sign in failed. Please try again.");
+        setSearchParams({});
+      }
+    };
+
+    handleGoogleAuth();
+  }, [searchParams, setSearchParams, isProcessing]);
+
+  if (isProcessing) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-sky-50 to-cyan-50">
+        <div className="text-center bg-white p-8 rounded-2xl shadow-xl">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-500 mx-auto mb-4"></div>
+          <h2 className="text-xl font-semibold text-gray-800">Completing sign in...</h2>
+          <p className="text-gray-600 mt-2">Please wait</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative">
+      <BlogLandingPage user={user} posts={posts} />
+      {user && user.id && <FloatingButton onClick={handleOpenModal} />}
+    </div>
+  );
+};
 
 const App = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -37,15 +116,9 @@ const App = () => {
         const storedToken = localStorage.getItem("token");
         const storedUserData = localStorage.getItem("user");
 
-        console.log("🔄 Initializing user from localStorage:", {
-          hasToken: !!storedToken,
-          hasUserData: !!storedUserData,
-        });
-
         if (storedToken && storedUserData) {
           try {
             const parsedUser = JSON.parse(storedUserData);
-            // console.log("✅ User loaded from localStorage:", parsedUser);
             setUser(parsedUser);
           } catch (error) {
             console.error("❌ Error parsing user data:", error);
@@ -54,7 +127,6 @@ const App = () => {
             setUser(null);
           }
         } else {
-          console.log("ℹ️ No user data in localStorage");
           setUser(null);
         }
       } catch (error) {
@@ -67,40 +139,7 @@ const App = () => {
     initializeUser();
   }, []);
 
-  // Check for OAuth callback
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get("token");
-    const userData = urlParams.get("user");
-    const authStatus = urlParams.get("auth");
-
-    console.log("🔍 Checking OAuth callback:", {
-      token: !!token,
-      userData: !!userData,
-      authStatus,
-    });
-
-    if (authStatus === "success" && token && userData) {
-      try {
-        const user = JSON.parse(decodeURIComponent(userData));
-        // console.log("✅ OAuth user received:", user);
-
-        localStorage.setItem("token", token);
-        localStorage.setItem("user", JSON.stringify(user));
-        setUser(user);
-
-        // Clean up URL
-        window.history.replaceState({}, document.title, window.location.pathname);
-        toast.success(`Welcome, ${user.name}! 🎉`);
-      } catch (error) {
-        console.error("❌ Error processing OAuth callback:", error);
-        toast.error("Authentication failed");
-      }
-    }
-  }, []);
-
   const handleAuthSuccess = (userData) => {
-    console.log("✅ Auth success callback, user data:", userData);
     setUser(userData);
     setIsAuthModalOpen(false);
     toast.success(`Welcome to Inkspire, ${userData.name}! 🎉`);
@@ -108,9 +147,6 @@ const App = () => {
 
   const handleFormSubmit = async (postData) => {
     try {
-      console.log("Submitting post data:", postData);
-      console.log("Current user:", user);
-
       const token = localStorage.getItem("token");
 
       if (!token || !user) {
@@ -121,14 +157,12 @@ const App = () => {
       const postWithAuthor = {
         ...postData,
         author: {
-          _id: user.id || user._id, // Try both id and _id
+          _id: user.id || user._id,
           name: user.name,
           email: user.email,
           avatar: user.avatar,
         },
       };
-
-      console.log("Final data being sent to API:", postWithAuthor);
 
       const response = await fetch(`${API_BASE_URL}/blogposts`, {
         method: "POST",
@@ -139,25 +173,12 @@ const App = () => {
         body: JSON.stringify(postWithAuthor),
       });
 
-      console.log("Response status:", response.status);
-      console.log("Response headers:", response.headers);
-
       if (!response.ok) {
-        let errorData;
-        try {
-          errorData = await response.json();
-          console.error("Error response data:", errorData);
-        } catch (parseError) {
-          const errorText = await response.text();
-          console.error("Error response text:", errorText);
-          throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
-        }
+        const errorData = await response.json();
         throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();
-      console.log("Success response:", data);
-
       toast.success("Post created successfully!");
       handleCloseModal();
 
@@ -172,7 +193,6 @@ const App = () => {
       return data;
     } catch (error) {
       console.error("Error creating post:", error);
-      console.error("Error stack:", error.stack);
       toast.error(error.message || "Failed to create post");
       throw error;
     }
@@ -192,7 +212,6 @@ const App = () => {
   };
 
   const handleProfileUpdate = (updatedUser) => {
-    console.log("🔄 Profile updated:", updatedUser);
     setUser(updatedUser);
     toast.success("Profile updated successfully!");
   };
@@ -231,34 +250,11 @@ const App = () => {
                 </BlogLayout>
               }
             />
-            {/* Google OAuth Success Callback Route */}
-            <Route
-              path="/auth/callback"
-              element={
-                <BlogLayout user={user} posts={posts}>
-                  <AuthSuccessPage />
-                </BlogLayout>
-              }
-            />
-            // In your App.jsx, add this test route temporarily:
-            <Route
-              path="/test-auth"
-              element={
-                <div className="min-h-screen flex items-center justify-center">
-                  <h1 className="text-2xl">Test Route Working</h1>
-                </div>
-              }
-            />
-            {/* Blog Routes with Floating Button */}
-            <Route
-              path="/"
-              element={
-                <div className="relative">
-                  <BlogLandingPage user={user} posts={posts} />
-                  {user && user.id && <FloatingButton onClick={handleOpenModal} />}
-                </div>
-              }
-            />
+
+            {/* Home page with Google Auth handler */}
+            <Route path="/" element={<HomePageWithAuth user={user} posts={posts} handleOpenModal={handleOpenModal} />} />
+
+            {/* Blog Routes */}
             <Route
               path="/blogposts/:id"
               element={
@@ -286,6 +282,7 @@ const App = () => {
                 </div>
               }
             />
+
             {/* Dashboard Routes */}
             <Route
               path="/profile"
@@ -316,14 +313,12 @@ const App = () => {
 
         {/* Global Components */}
         <PostModal isOpen={isModalOpen} onClose={handleCloseModal} onSubmit={handleFormSubmit} currentUser={user} />
-
         <AuthModal isVisible={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} onAuthSuccess={handleAuthSuccess} initialView="login" />
 
         <Toaster
           position="top-right"
           toastOptions={{
             duration: 4000,
-            className: "",
             style: {
               fontSize: "14px",
               background: "#363636",
@@ -332,10 +327,6 @@ const App = () => {
             success: {
               style: {
                 background: "#10B981",
-              },
-              iconTheme: {
-                primary: "#fff",
-                secondary: "#10B981",
               },
             },
             error: {

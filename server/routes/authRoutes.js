@@ -2,7 +2,7 @@
 import express from "express";
 import passport from "passport";
 import bcrypt from "bcryptjs";
-import { register, login, googleAuthCallback, getCurrentUser, updateProfile, testConfig, debugGoogle } from "../controllers/authController.js";
+import { register, login, googleAuthCallback, getGoogleAuthSession, getCurrentUser, updateProfile, testConfig, debugGoogle } from "../controllers/authController.js";
 import { protect } from "../middleware/authMiddleware.js";
 import User from "../models/User.js";
 import nodemailer from "nodemailer";
@@ -314,14 +314,9 @@ router.post("/resend-otp", async (req, res) => {
 });
 
 // Google OAuth
+// Google OAuth - OPTION 1: Original (try hash params)
 router.get(
   "/google",
-  (req, res, next) => {
-    console.log("🔍 Starting Google OAuth flow...");
-    console.log("   Client ID:", process.env.GOOGLE_CLIENT_ID ? "Set" : "Missing");
-    console.log("   Callback URL:", process.env.GOOGLE_CALLBACK_URL);
-    next();
-  },
   passport.authenticate("google", {
     scope: ["profile", "email"],
     session: false,
@@ -332,11 +327,17 @@ router.get(
 router.get(
   "/google/callback",
   passport.authenticate("google", {
-    failureRedirect: `${process.env.FRONTEND_URL || "http://localhost:3000"}/login?error=google_auth_failed`,
+    failureRedirect: `${process.env.FRONTEND_URL}/?auth=failed`,
     session: false,
   }),
   googleAuthCallback
 );
+
+// ✅ NEW: Google session retrieval endpoint
+router.get("/google-session", getGoogleAuthSession);
+
+// // NEW: Session retrieval endpoint
+// router.get("/session", getAuthSession);
 
 // Protected routes
 router.get("/me", protect, getCurrentUser);

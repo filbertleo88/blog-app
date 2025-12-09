@@ -126,26 +126,19 @@ export const login = async (req, res) => {
 };
 
 // Google OAuth Callback - FIXED VERSION
+// Step 1: Update authController.js - Use SIMPLE session redirect
+
 export const googleAuthCallback = async (req, res) => {
   try {
     console.log("✅ Google OAuth callback triggered");
-    console.log("   User data received:", req.user ? "Yes" : "No");
 
     if (!req.user) {
       console.error("❌ No user data in Google OAuth callback");
-      return res.redirect(`${process.env.FRONTEND_URL || "http://localhost:3000"}/login?error=no_user_data`);
+      return res.redirect(`${process.env.FRONTEND_URL}/?auth=failed`);
     }
 
-    // Log user info for debugging
-    console.log("   User ID:", req.user._id);
-    console.log("   User email:", req.user.email);
-    console.log("   User avatar:", req.user.avatar ? "Exists" : "No avatar");
-
-    // Generate JWT token
     const token = generateToken(req.user._id);
-    console.log("   Token generated:", token ? "Yes" : "No");
 
-    // Create user data for frontend
     const userData = {
       id: req.user._id.toString(),
       name: req.user.name,
@@ -155,56 +148,186 @@ export const googleAuthCallback = async (req, res) => {
       role: req.user.role || "user",
     };
 
-    // Generate a simple session ID without crypto.randomBytes
-    const sessionId = `session_${req.user._id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    // Generate session ID
+    const sessionId = `gs_${req.user._id}_${Date.now()}`;
 
-    // Store avatar in temporary session (5 minute expiry)
-    global.authSessions = global.authSessions || new Map();
-    global.authSessions.set(sessionId, {
-      userId: req.user._id.toString(),
-      avatar: req.user.avatar,
+    // Store in memory (you could also use Redis in production)
+    global.googleAuthSessions = global.googleAuthSessions || new Map();
+    global.googleAuthSessions.set(sessionId, {
+      token,
+      user: userData,
       expires: Date.now() + 5 * 60 * 1000, // 5 minutes
     });
 
-    // Cleanup old sessions (optional, for memory management)
-    if (global.authSessions.size > 100) {
-      const now = Date.now();
-      for (const [key, value] of global.authSessions.entries()) {
-        if (value.expires < now) {
-          global.authSessions.delete(key);
-        }
+    // Cleanup old sessions
+    const now = Date.now();
+    for (const [key, value] of global.googleAuthSessions.entries()) {
+      if (value.expires < now) {
+        global.googleAuthSessions.delete(key);
       }
     }
 
-    // Add session ID to user data
-    userData.sessionId = sessionId;
+    // ✅ Redirect to frontend homepage with session ID ONLY
+    const redirectUrl = `${process.env.FRONTEND_URL}/?google_auth=success&session=${sessionId}`;
 
-    // Encode user data for URL
-    const encodedUserData = encodeURIComponent(JSON.stringify(userData));
-
-    // Create redirect URL with token and user data
-    const redirectUrl = `${process.env.FRONTEND_URL || "http://localhost:3000"}/auth/callback?token=${token}&user=${encodedUserData}`;
-    // const redirectUrl = `${process.env.FRONTEND_URL || "http://localhost:3000"}/auth/success?token=${token}&user=${encodedUserData}`;
-    // const redirectUrl = `${process.env.FRONTEND_URL || "http://localhost:3000"}/login?google_success=true&token=${token}&user=${encodedUserData}`;
-
-    console.log("✅ Google OAuth successful");
-    console.log("   Redirecting to:", redirectUrl.replace(token, "TOKEN_HIDDEN"));
-    console.log("   Session ID:", sessionId);
-    console.log("   Avatar URL:", req.user.avatar || "No avatar");
-
+    console.log("✅ Redirecting to:", redirectUrl);
     res.redirect(redirectUrl);
   } catch (error) {
     console.error("❌ Google auth callback error:", error);
-
-    // Create error redirect URL
-    const errorMessage = encodeURIComponent(error.message || "Google authentication failed");
-
-    const errorUrl = `${process.env.FRONTEND_URL || "http://localhost:3000"}/login?error=google_auth_failed&message=${errorMessage}`;
-
-    console.log("   Redirecting to error page:", errorUrl);
-    res.redirect(errorUrl);
+    res.redirect(`${process.env.FRONTEND_URL}/?auth=failed`);
   }
 };
+
+// Step 2: Add session retrieval endpoint
+export const getGoogleAuthSession = async (req, res) => {
+  try {
+    const { session } = req.query;
+
+    if (!session) {
+      return res.status(400).json({
+        success: false,
+        message: "Session ID required",
+      });
+    }
+
+    global.googleAuthSessions = global.googleAuthSessions || new Map();
+    const sessionData = global.googleAuthSessions.get(session);
+
+    if (!sessionData) {
+      return res.status(404).json({
+        success: false,
+        message: "Session not found or expired",
+      });
+    }
+
+    // Check if expired
+    if (Date.now() > sessionData.expires) {
+      global.googleAuthSessions.delete(session);
+      return res.status(404).json({
+        success: false,
+        message: "Session expired",
+      });
+    }
+
+    // Delete session after retrieval (one-time use)
+    global.googleAuthSessions.delete(session);
+
+    res.json({
+      success: true,
+      token: sessionData.token,
+      user: sessionData.user,
+    });
+  } catch (error) {
+    console.error("Get session error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+};
+
+// // ALTERNATIVE OPTION 2: Session-based approach
+// export const googleAuthCallbackSession = async (req, res) => {
+//   try {
+//     console.log("✅ Google OAuth callback triggered (Session method)");
+
+//     if (!req.user) {
+//       console.error("❌ No user data in Google OAuth callback");
+//       return res.redirect(`${process.env.FRONTEND_URL}/?google_auth=failed`);
+//     }
+
+//     const token = generateToken(req.user._id);
+
+//     const userData = {
+//       id: req.user._id.toString(),
+//       name: req.user.name,
+//       email: req.user.email,
+//       avatar: req.user.avatar || "",
+//       authProvider: req.user.authProvider || "google",
+//       role: req.user.role || "user",
+//     };
+
+//     // Generate a temporary session ID
+//     const sessionId = `auth_${req.user._id}_${Date.now()}`;
+
+//     // Store in global temporary storage (expires in 2 minutes)
+//     global.authSessions = global.authSessions || new Map();
+//     global.authSessions.set(sessionId, {
+//       token,
+//       user: userData,
+//       expires: Date.now() + 2 * 60 * 1000, // 2 minutes
+//     });
+
+//     // Cleanup old sessions
+//     if (global.authSessions.size > 100) {
+//       const now = Date.now();
+//       for (const [key, value] of global.authSessions.entries()) {
+//         if (value.expires < now) {
+//           global.authSessions.delete(key);
+//         }
+//       }
+//     }
+
+//     // Redirect with just session ID
+//     const redirectUrl = `${process.env.FRONTEND_URL}/auth/callback?session=${sessionId}`;
+
+//     console.log("✅ Session created:", sessionId);
+//     console.log("   Redirecting to:", redirectUrl);
+
+//     res.redirect(redirectUrl);
+//   } catch (error) {
+//     console.error("❌ Google auth callback error:", error);
+//     res.redirect(`${process.env.FRONTEND_URL}/?google_auth=failed`);
+//   }
+// };
+
+// // NEW: Endpoint to retrieve session data
+// export const getAuthSession = async (req, res) => {
+//   try {
+//     const { session } = req.query;
+
+//     if (!session) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Session ID required",
+//       });
+//     }
+
+//     global.authSessions = global.authSessions || new Map();
+//     const sessionData = global.authSessions.get(session);
+
+//     if (!sessionData) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Session not found or expired",
+//       });
+//     }
+
+//     // Check if expired
+//     if (Date.now() > sessionData.expires) {
+//       global.authSessions.delete(session);
+//       return res.status(404).json({
+//         success: false,
+//         message: "Session expired",
+//       });
+//     }
+
+//     // Delete session after use (one-time use)
+//     global.authSessions.delete(session);
+
+//     res.json({
+//       success: true,
+//       token: sessionData.token,
+//       user: sessionData.user,
+//     });
+//   } catch (error) {
+//     console.error("Get auth session error:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: "Server error",
+//     });
+//   }
+// };
 
 // Get Current User
 export const getCurrentUser = async (req, res) => {
