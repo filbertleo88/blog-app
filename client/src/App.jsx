@@ -78,6 +78,71 @@ const HomePageWithAuth = ({ user, posts, handleOpenModal }) => {
     handleGoogleAuth();
   }, [searchParams, setSearchParams, isProcessing]);
 
+  // Add this useEffect in your App component (outside the Routes)
+  useEffect(() => {
+    const handleAuthCallback = () => {
+      const pathname = window.location.pathname;
+      const searchParams = new URLSearchParams(window.location.search);
+
+      if (pathname === "/auth/callback") {
+        const token = searchParams.get("token");
+        const userDataString = searchParams.get("user");
+
+        if (token && userDataString) {
+          try {
+            const userData = JSON.parse(decodeURIComponent(userDataString));
+
+            // Store in localStorage
+            localStorage.setItem("token", token);
+            localStorage.setItem("user", userDataString);
+            setUser(userData);
+
+            toast.success(`Welcome back, ${userData.name}! 🎉`);
+
+            // Clear URL and redirect to home
+            window.history.replaceState({}, "", "/");
+            window.location.href = "/";
+          } catch (error) {
+            console.error("Error processing auth callback:", error);
+            toast.error("Authentication failed");
+            window.location.href = "/login";
+          }
+        }
+      }
+    };
+
+    handleAuthCallback();
+  }, []);
+
+  // Add this useEffect at the TOP of your App component
+  useEffect(() => {
+    // Handle /auth/callback immediately
+    if (window.location.pathname === "/auth/callback") {
+      const searchParams = new URLSearchParams(window.location.search);
+      const token = searchParams.get("token");
+      const userDataString = searchParams.get("user");
+
+      if (token && userDataString) {
+        try {
+          const userData = JSON.parse(decodeURIComponent(userDataString));
+          localStorage.setItem("token", token);
+          localStorage.setItem("user", userDataString);
+          setUser(userData);
+          toast.success(`Welcome back, ${userData.name}!`);
+
+          // Redirect to home
+          window.history.replaceState({}, "", "/");
+          window.location.href = "/";
+        } catch (error) {
+          console.error("Auth callback error:", error);
+          window.location.href = "/login";
+        }
+      } else {
+        window.location.href = "/login";
+      }
+    }
+  }, []);
+
   if (isProcessing) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-sky-50 to-cyan-50">
@@ -137,6 +202,38 @@ const App = () => {
     };
 
     initializeUser();
+  }, []);
+
+  // Check for OAuth callback
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get("token");
+    const userData = urlParams.get("user");
+    const authStatus = urlParams.get("auth");
+
+    console.log("🔍 Checking OAuth callback:", {
+      token: !!token,
+      userData: !!userData,
+      authStatus,
+    });
+
+    if (authStatus === "success" && token && userData) {
+      try {
+        const user = JSON.parse(decodeURIComponent(userData));
+        console.log("✅ OAuth user received:", user);
+
+        localStorage.setItem("token", token);
+        localStorage.setItem("user", JSON.stringify(user));
+        setUser(user);
+
+        // Clean up URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+        toast.success(`Welcome, ${user.name}! 🎉`);
+      } catch (error) {
+        console.error("❌ Error processing OAuth callback:", error);
+        toast.error("Authentication failed");
+      }
+    }
   }, []);
 
   const handleAuthSuccess = (userData) => {
@@ -250,10 +347,22 @@ const App = () => {
                 </BlogLayout>
               }
             />
-
             {/* Home page with Google Auth handler */}
             <Route path="/" element={<HomePageWithAuth user={user} posts={posts} handleOpenModal={handleOpenModal} />} />
-
+            // In your App.jsx, add this route in the Routes section:
+            <Route
+              path="/auth/callback"
+              element={
+                <BlogLayout user={user} posts={posts}>
+                  <div className="min-h-screen flex items-center justify-center">
+                    <div className="text-center">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-600 mx-auto"></div>
+                      <p className="mt-4 text-gray-600">Processing authentication...</p>
+                    </div>
+                  </div>
+                </BlogLayout>
+              }
+            />
             {/* Blog Routes */}
             <Route
               path="/blogposts/:id"
@@ -282,7 +391,6 @@ const App = () => {
                 </div>
               }
             />
-
             {/* Dashboard Routes */}
             <Route
               path="/profile"

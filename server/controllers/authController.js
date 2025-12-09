@@ -167,8 +167,20 @@ export const googleAuthCallback = async (req, res) => {
       }
     }
 
+    // Minimal data in URL
+    const minimalUserData = {
+      id: req.user._id,
+      name: req.user.name,
+      email: req.user.email,
+      authProvider: req.user.authProvider || "google",
+      role: req.user.role,
+      sessionId: sessionId, // Pass session ID to retrieve avatar
+    };
+
+    const encodedUserData = encodeURIComponent(JSON.stringify(minimalUserData));
+
     // ✅ Redirect to frontend homepage with session ID ONLY
-    const redirectUrl = `${process.env.FRONTEND_URL}/?google_auth=success&session=${sessionId}`;
+    const redirectUrl = `${process.env.FRONTEND_URL}/?auth=success&token=${token}&user=${encodedUserData}`;
 
     console.log("✅ Redirecting to:", redirectUrl);
     res.redirect(redirectUrl);

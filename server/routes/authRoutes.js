@@ -2,7 +2,7 @@
 import express from "express";
 import passport from "passport";
 import bcrypt from "bcryptjs";
-import { register, login, googleAuthCallback, getGoogleAuthSession, getCurrentUser, updateProfile, testConfig, debugGoogle } from "../controllers/authController.js";
+import { register, login, googleAuthCallback, getGoogleAuthSession, getCurrentUser, updateProfile, testConfig, debugGoogle } from "../controllers/authController.js"; //googleAuthCallback,
 import { protect } from "../middleware/authMiddleware.js";
 import User from "../models/User.js";
 import nodemailer from "nodemailer";
