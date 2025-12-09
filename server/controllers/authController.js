@@ -126,8 +126,8 @@ export const login = async (req, res) => {
 };
 
 // Google OAuth Callback - FIXED VERSION
-// Step 1: Update authController.js - Use SIMPLE session redirect
 
+// In authController.js - FIXED redirect
 export const googleAuthCallback = async (req, res) => {
   try {
     console.log("✅ Google OAuth callback triggered");
@@ -148,39 +148,10 @@ export const googleAuthCallback = async (req, res) => {
       role: req.user.role || "user",
     };
 
-    // Generate session ID
-    const sessionId = `gs_${req.user._id}_${Date.now()}`;
+    const encodedUserData = encodeURIComponent(JSON.stringify(userData));
 
-    // Store in memory (you could also use Redis in production)
-    global.googleAuthSessions = global.googleAuthSessions || new Map();
-    global.googleAuthSessions.set(sessionId, {
-      token,
-      user: userData,
-      expires: Date.now() + 5 * 60 * 1000, // 5 minutes
-    });
-
-    // Cleanup old sessions
-    const now = Date.now();
-    for (const [key, value] of global.googleAuthSessions.entries()) {
-      if (value.expires < now) {
-        global.googleAuthSessions.delete(key);
-      }
-    }
-
-    // Minimal data in URL
-    const minimalUserData = {
-      id: req.user._id,
-      name: req.user.name,
-      email: req.user.email,
-      authProvider: req.user.authProvider || "google",
-      role: req.user.role,
-      sessionId: sessionId, // Pass session ID to retrieve avatar
-    };
-
-    const encodedUserData = encodeURIComponent(JSON.stringify(minimalUserData));
-
-    // ✅ Redirect to frontend homepage with session ID ONLY
-    const redirectUrl = `${process.env.FRONTEND_URL}/?auth=success&token=${token}&user=${encodedUserData}`;
+    // ✅ Redirect to dedicated callback route on frontend
+    const redirectUrl = `${process.env.FRONTEND_URL}/auth/callback?auth=success&token=${token}&user=${encodedUserData}`;
 
     console.log("✅ Redirecting to:", redirectUrl);
     res.redirect(redirectUrl);
