@@ -9,22 +9,10 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// ✅ Configure Multer Storage with Cloudinary
-const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: "blog-images",
-    allowed_formats: ["jpg", "jpeg", "png", "gif", "webp"],
-    transformation: [{ width: 1200, height: 630, crop: "limit" }],
-    public_id: (req, file) => {
-      const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-      return uniqueSuffix;
-    },
-  },
-});
-
+// Configure multer for memory storage (we'll stream to Cloudinary)
+const storage = multer.memoryStorage();
 const upload = multer({
-  storage: storage, // Make sure this is CloudinaryStorage
+  storage: storage,
   limits: {
     fileSize: 5 * 1024 * 1024, // 5MB limit
   },
@@ -40,5 +28,6 @@ const upload = multer({
     }
   },
 });
+
 
 export default upload;
