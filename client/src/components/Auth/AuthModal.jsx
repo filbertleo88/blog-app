@@ -303,7 +303,8 @@ const AuthModal = ({ isVisible, onClose, initialView = "login", onViewSwitch, na
           confirmPassword: "",
         });
         toast.success(`${isLoginView ? "Login" : "Registration"} successful!`);
-        navigate("/");
+        // Navigate back to the original page
+        window.location.href = "/";
       } else {
         setError(data.message || "Authentication failed");
         // Trigger shake animation on error
@@ -614,7 +615,7 @@ const AuthModal = ({ isVisible, onClose, initialView = "login", onViewSwitch, na
               <div className="text-center md:text-left">
                 <h2 className="text-3xl font-bold text-gray-800 mb-2">{forgotPasswordView ? (otpSent ? "Reset Password" : "Forgot Password") : isLoginView ? "Welcome Back" : "Create Account"}</h2>
                 <p className="text-gray-600">
-                  {forgotPasswordView ? (otpSent ? "Enter OTP and set new password" : "Enter your email to receive a reset OTP") : isLoginView ? "Sign in to continue your journey" : "Join our creative community"}
+                  {forgotPasswordView ? (otpSent ? "Enter OTP and set new password" : "Enter your email to receive a reset OTP") : isLoginView ? "Login to continue your journey" : "Join our creative community"}
                 </p>
               </div>
             </div>
@@ -860,9 +861,9 @@ const AuthModal = ({ isVisible, onClose, initialView = "login", onViewSwitch, na
                           {isLoginView ? "Signing in..." : "Creating account..."}
                         </div>
                       ) : isLoginView ? (
-                        "Sign In"
+                        "Login"
                       ) : (
-                        "Sign Up"
+                        "Register"
                       )}
                     </div>
                   </button>
@@ -878,7 +879,7 @@ const AuthModal = ({ isVisible, onClose, initialView = "login", onViewSwitch, na
                   <p className="text-center text-gray-600">
                     {isLoginView ? "Don't have an account?" : "Already have an account?"}
                     <button type="button" onClick={handleViewSwitch} className="ml-2 text-sky-600 hover:text-sky-700 font-semibold">
-                      {isLoginView ? "Sign Up" : "Sign In"}
+                      {isLoginView ? "Register" : "Login"}
                     </button>
                   </p>
                 </form>

@@ -118,14 +118,22 @@ const BlogNavbar = ({ activeMenu, posts }) => {
   };
 
   const handleLogout = () => {
+    // Clear all localStorage
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    localStorage.removeItem("blog_visitorId");
+    localStorage.removeItem("likedPosts");
+
+    // Call auth context logout
     authLogout();
+
     setShowUserDropdown(false);
-    navigate("/");
+
+    // Force a complete page refresh
+    window.location.href = "/";
   };
 
   const handleAuthButtonClick = () => {
-    navigate("/login");
-    setAuthView("login");
     setIsAuthModalOpen(true);
   };
 
@@ -139,7 +147,8 @@ const BlogNavbar = ({ activeMenu, posts }) => {
 
   const handleAuthSuccess = (userData) => {
     setIsAuthModalOpen(false);
-    navigate("/");
+    const from = location.state?.from || "/";
+    navigate(from);
   };
 
   const handleViewSwitch = (view) => {
@@ -216,10 +225,7 @@ const BlogNavbar = ({ activeMenu, posts }) => {
                     <span className="text-sm font-medium text-gray-700">Welcome, {getUserName()}</span>
                   </div>
                 ) : (
-                  <div
-                    className="flex items-center gap-2 bg-gray-50 rounded-full pl-2 pr-4 py-1 hover:bg-gray-100 transition-colors cursor-pointer"
-                    onClick={toggleUserDropdown}
-                  >
+                  <div className="flex items-center gap-2 bg-gray-50 rounded-full pl-2 pr-4 py-1 hover:bg-gray-100 transition-colors cursor-pointer" onClick={toggleUserDropdown}>
                     {getUserAvatar() ? (
                       <img src={getUserAvatar()} alt={getUserName()} className="w-8 h-8 rounded-full object-cover" />
                     ) : (

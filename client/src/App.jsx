@@ -163,12 +163,20 @@ const App = () => {
   };
 
   const handleLogout = () => {
+    console.log("Logging out...");
+    console.log("User before logout:", user);
+
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     localStorage.removeItem("blog_visitorId");
     localStorage.removeItem("likedPosts");
+
     setUser(null);
+
+    console.log("User after logout:", user); // Should be null
+
     toast.success("Logged out successfully");
+    window.location.href = "/";
   };
 
   const handleLoginClick = () => {
