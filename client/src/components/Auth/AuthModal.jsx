@@ -261,6 +261,69 @@ const AuthModal = ({ isVisible, onClose, initialView = "login", onViewSwitch, na
     return true;
   };
 
+  // const handleSubmit = async (e) => {
+  //   e.preventDefault();
+
+  //   if (!validateForm()) return;
+
+  //   setLoading(true);
+  //   setError("");
+
+  //   // Open eyes when form is submitted
+  //   setEyesClosed(false);
+
+  //   try {
+  //     const endpoint = isLoginView ? "/auth/login" : "/auth/register";
+  //     const payload = isLoginView ? { email: formData.email, password: formData.password } : { name: formData.name, email: formData.email, password: formData.password };
+
+  //     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //       },
+  //       body: JSON.stringify(payload),
+  //     });
+
+  //     const data = await response.json();
+  //     // toast.success(`Welcome back, ${data.user.name}! 🎉`);
+
+  //     if (!response.ok) {
+  //       throw new Error(data.message || `HTTP error! status: ${response.status}`);
+  //     }
+
+  //     if (data.success) {
+  //       // Trigger nod animation on success
+  //       triggerCharacterAnimation("nod-animation");
+  //       toast.success(`${isLoginView ? "Login" : "Registration"} successful!`);
+
+  //       login(data.user, data.token);
+  //       // onClose();
+  //       setFormData({
+  //         name: "",
+  //         email: "",
+  //         password: "",
+  //         confirmPassword: "",
+  //       });
+
+  //       setTimeout(() => {
+  //         // Navigate back to the original page
+  //         window.location.href = "/";
+  //       }, 1500);
+  //     } else {
+  //       setError(data.message || "Authentication failed");
+  //       // Trigger shake animation on error
+  //       triggerCharacterAnimation("shake-animation");
+  //     }
+  //   } catch (error) {
+  //     console.error("Auth error:", error);
+  //     setError(error.message || "Network error. Please try again.");
+  //     // Trigger shake animation on error
+  //     triggerCharacterAnimation("shake-animation");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -276,6 +339,9 @@ const AuthModal = ({ isVisible, onClose, initialView = "login", onViewSwitch, na
       const endpoint = isLoginView ? "/auth/login" : "/auth/register";
       const payload = isLoginView ? { email: formData.email, password: formData.password } : { name: formData.name, email: formData.email, password: formData.password };
 
+      console.log("Sending request to:", `${API_BASE_URL}${endpoint}`);
+      console.log("Payload:", payload);
+
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: "POST",
         headers: {
@@ -284,7 +350,11 @@ const AuthModal = ({ isVisible, onClose, initialView = "login", onViewSwitch, na
         body: JSON.stringify(payload),
       });
 
+      console.log("Response status:", response.status);
+      console.log("Response headers:", response.headers);
+
       const data = await response.json();
+      console.log("Response data:", data);
 
       if (!response.ok) {
         throw new Error(data.message || `HTTP error! status: ${response.status}`);
@@ -302,16 +372,21 @@ const AuthModal = ({ isVisible, onClose, initialView = "login", onViewSwitch, na
           password: "",
           confirmPassword: "",
         });
-        toast.success(`${isLoginView ? "Login" : "Registration"} successful!`);
-        // Navigate back to the original page
-        window.location.href = "/";
+
+        toast.success(`Welcome back, ${data.user.name}! 🎉`);
+
+        // Wait for toast to be visible, then redirect
+        setTimeout(() => {
+          navigate("/");
+        }, 1500);
       } else {
         setError(data.message || "Authentication failed");
         // Trigger shake animation on error
         triggerCharacterAnimation("shake-animation");
       }
     } catch (error) {
-      console.error("Auth error:", error);
+      console.error("Auth error details:", error);
+      console.error("Error message:", error.message);
       setError(error.message || "Network error. Please try again.");
       // Trigger shake animation on error
       triggerCharacterAnimation("shake-animation");

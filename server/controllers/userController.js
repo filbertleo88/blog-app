@@ -1,30 +1,17 @@
 // controllers/userController.js
 import User from "../models/User.js";
 import generateToken from "../utils/generateToken.js";
+import BlogPost from "../models/BlogPost.js";
 
-//  Update registerUser function
-const registerUser = async (req, res) => {
+// REMOVED: registerUser and authUser - these are now in authController.js
+
+// Get user profile
+const getUserProfile = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
-
-    const userExists = await User.findOne({ email });
-
-    if (userExists) {
-      return res.status(400).json({
-        success: false,
-        message: "User already exists",
-      });
-    }
-
-    const user = await User.create({
-      name,
-      email,
-      password,
-      avatar: "", // Set blank avatar by default
-    });
+    const user = await User.findById(req.user._id).select("-password");
 
     if (user) {
-      res.status(201).json({
+      res.json({
         success: true,
         user: {
           _id: user._id,
@@ -35,78 +22,32 @@ const registerUser = async (req, res) => {
           isVerified: user.isVerified,
           createdAt: user.createdAt,
         },
-        token: generateToken(user._id),
       });
     } else {
-      res.status(400).json({
+      res.status(404).json({
         success: false,
-        message: "Invalid user data",
+        message: "User not found",
       });
     }
   } catch (error) {
-    console.error("Registration error:", error);
+    console.error("Get profile error:", error);
     res.status(500).json({
       success: false,
-      message: "Server error during registration",
+      message: "Server error",
     });
   }
 };
 
-const authUser = async (req, res) => {
-  try {
-    const { email, password } = req.body;
-
-    const user = await User.findOne({ email });
-
-    if (user && (await user.matchPassword(password))) {
-      res.json({
-        success: true,
-        user: {
-          _id: user._id,
-          name: user.name,
-          email: user.email,
-          avatar: user.avatar, // This might be empty string
-          role: user.role,
-          isVerified: user.isVerified,
-          createdAt: user.createdAt,
-        },
-        token: generateToken(user._id),
-      });
-    } else {
-      res.status(401).json({
-        success: false,
-        message: "Invalid email or password",
-      });
-    }
-  } catch (error) {
-    console.error("Login error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Server error during login",
-    });
-  }
-};
-
-const getUserProfile = async (req, res) => {
-  const user = await User.findById(req.user._id);
-
-  if (user) {
-    res.json({
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-    });
-  } else {
-    res.status(404).send("User not found");
-  }
-};
-
+// Update user profile
 const updateUserProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
 
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
     }
 
     const { name, email, avatar } = req.body;
@@ -115,7 +56,10 @@ const updateUserProfile = async (req, res) => {
     if (email && email !== user.email) {
       const emailExists = await User.findOne({ email });
       if (emailExists) {
-        return res.status(400).json({ message: "Email already exists" });
+        return res.status(400).json({
+          success: false,
+          message: "Email already exists",
+        });
       }
     }
 
@@ -127,28 +71,46 @@ const updateUserProfile = async (req, res) => {
     const updatedUser = await user.save();
 
     res.json({
-      _id: updatedUser._id,
-      name: updatedUser.name,
-      email: updatedUser.email,
-      avatar: updatedUser.avatar,
-      role: updatedUser.role,
-      isVerified: updatedUser.isVerified,
+      success: true,
       message: "Profile updated successfully",
+      user: {
+        _id: updatedUser._id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        avatar: updatedUser.avatar,
+        role: updatedUser.role,
+        isVerified: updatedUser.isVerified,
+      },
     });
   } catch (error) {
     console.error("Profile update error:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message,
+    });
   }
 };
 
-// Backend route for user's posts
+// Get user's blog posts
 const getUserPost = async (req, res) => {
   try {
-    const posts = await BlogPost.find({ "author._id": req.userId }).sort({ createdAt: -1 });
-    res.json(posts);
+    const posts = await BlogPost.find({ author_id: req.userId }).sort({
+      createdAt: -1,
+    });
+
+    res.json({
+      success: true,
+      posts,
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Get user posts error:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
 
-export { registerUser, authUser, getUserProfile, updateUserProfile, getUserPost };
+// Export only the functions that are actually used
+export { getUserProfile, updateUserProfile, getUserPost };

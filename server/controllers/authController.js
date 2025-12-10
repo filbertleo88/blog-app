@@ -17,6 +17,14 @@ export const register = async (req, res) => {
       });
     }
 
+    // Check password length
+    if (password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: "Password must be at least 6 characters",
+      });
+    }
+
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({
@@ -25,11 +33,11 @@ export const register = async (req, res) => {
       });
     }
 
-    // Create user with empty avatar
+    // Create user - password will be hashed by pre-save middleware
     const user = new User({
       name,
       email,
-      password,
+      password, // This will be hashed by the pre-save middleware
       username: username || name.toLowerCase().replace(/\s+/g, "") + Math.random().toString(36).substr(2, 5),
       avatar: "", // Empty string for non-Google users
       authProvider: "email",
@@ -55,6 +63,25 @@ export const register = async (req, res) => {
     });
   } catch (error) {
     console.error("Registration error:", error);
+
+    // Handle duplicate key error
+    if (error.code === 11000) {
+      return res.status(400).json({
+        success: false,
+        message: "Email already exists",
+      });
+    }
+
+    // Handle validation errors
+    if (error.name === "ValidationError") {
+      const messages = Object.values(error.errors).map((err) => err.message);
+      return res.status(400).json({
+        success: false,
+        message: "Validation failed",
+        errors: messages,
+      });
+    }
+
     res.status(500).json({
       success: false,
       message: "Server error during registration",
@@ -91,7 +118,28 @@ export const login = async (req, res) => {
       });
     }
 
-    const isPasswordValid = await user.comparePassword(password);
+    // TEMPORARY FIX: Handle both hashed and unhashed passwords during transition
+    let isPasswordValid;
+
+    try {
+      // First try to compare as bcrypt hash
+      isPasswordValid = await user.comparePassword(password);
+    } catch (compareError) {
+      console.log("Bcrypt compare failed, checking if password is unhashed:", compareError.message);
+
+      // If bcrypt compare fails, check if it's an unhashed password (for migration)
+      if (user.password === password) {
+        // Password matches as plain text - hash it now
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(password, salt);
+        await user.save();
+        console.log(`Migrated password for user: ${user.email}`);
+        isPasswordValid = true;
+      } else {
+        isPasswordValid = false;
+      }
+    }
+
     if (!isPasswordValid) {
       return res.status(400).json({
         success: false,
