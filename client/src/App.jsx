@@ -41,7 +41,6 @@ const App = () => {
             setUser(parsedUser);
           } catch (error) {
             console.error("❌ Error parsing user data:", error);
-            // Clear invalid data
             localStorage.removeItem("token");
             localStorage.removeItem("user");
             setUser(null);
@@ -74,44 +73,34 @@ const App = () => {
         fullUrl: window.location.href,
       });
 
-      // Only process if we have all required data
       if (authStatus === "success" && token && userDataString) {
         try {
-          // Try to decode the user data
           let userData;
           try {
             userData = JSON.parse(decodeURIComponent(userDataString));
           } catch (e) {
-            // If decodeURIComponent fails, try direct parse
             userData = JSON.parse(userDataString);
           }
 
           console.log("✅ OAuth user data:", userData);
 
-          // Store in localStorage
           localStorage.setItem("token", token);
           localStorage.setItem("user", JSON.stringify(userData));
 
-          // Update state
           setUser(userData);
 
-          // Show success message
           toast.success(`Welcome back, ${userData.name}! 🎉`);
 
-          // Clean up URL without reloading
           const cleanUrl = window.location.pathname;
           window.history.replaceState({}, document.title, cleanUrl);
         } catch (error) {
           console.error("❌ Error processing OAuth callback:", error);
           toast.error("Authentication failed: " + error.message);
-
-          // Redirect to home with error
           window.history.replaceState({}, document.title, "/");
         }
       }
     };
 
-    // Run once on mount
     handleOAuthCallback();
   }, []);
 
@@ -158,7 +147,6 @@ const App = () => {
       toast.success("Post created successfully!");
       handleCloseModal();
 
-      // Refresh posts
       const refreshResponse = await fetch(`${API_BASE_URL}/blogposts`);
       if (refreshResponse.ok) {
         const refreshResult = await refreshResponse.json();
@@ -213,17 +201,17 @@ const App = () => {
             <Route
               path="/login"
               element={
-                <BlogLayout user={user} posts={posts}>
-                  <div className="min-h-screen"></div>
-                </BlogLayout>
+                <div className="relative">
+                  <BlogLandingPage user={user} posts={posts} />
+                </div>
               }
             />
             <Route
               path="/register"
               element={
-                <BlogLayout user={user} posts={posts}>
-                  <div className="min-h-screen"></div>
-                </BlogLayout>
+                <div className="relative">
+                  <BlogLandingPage user={user} posts={posts} />
+                </div>
               }
             />
 

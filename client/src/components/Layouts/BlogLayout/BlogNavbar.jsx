@@ -268,7 +268,7 @@ const BlogNavbar = ({ activeMenu, posts }) => {
               </div>
             ) : (
               <button onClick={handleAuthButtonClick} className="bg-gradient-to-r from-sky-500 to-cyan-400 text-white px-4 py-2 rounded-lg hover:opacity-90 transition font-medium shadow-md hover:shadow-lg">
-                Login / SignUp
+                Login / Register
               </button>
             )}
           </div>
@@ -285,7 +285,7 @@ const BlogNavbar = ({ activeMenu, posts }) => {
                 </Link>
               ))}
 
-              {/* Simple mobile auth section - just Login/SignUp or Logout */}
+              {/* Simple mobile auth section - just Login/Register or Logout */}
               <div className="border-t border-gray-200 mt-4 pt-4 px-4">
                 {currentUser ? (
                   <>
@@ -320,7 +320,7 @@ const BlogNavbar = ({ activeMenu, posts }) => {
                     }}
                     className="w-full text-center py-3 bg-gradient-to-r from-sky-500 to-cyan-400 text-white rounded-lg hover:opacity-90 transition font-medium"
                   >
-                    Login / SignUp
+                    Login / Register
                   </button>
                 )}
               </div>

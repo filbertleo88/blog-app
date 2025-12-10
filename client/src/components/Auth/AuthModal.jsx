@@ -503,7 +503,7 @@ const AuthModal = ({ isVisible, onClose, initialView = "login", onViewSwitch, na
 
       <div className="fixed inset-0 flex items-center justify-center z-50 p-4" onClick={handleBackdropClick}>
         {/* Semi-transparent backdrop that shows page background */}
-        <div className="absolute inset-0 bg-black/20 transition-all duration-300"></div>
+        <div className="absolute inset-0 bg-black/10 transition-all duration-300"></div>
 
         {/* Main Glassmorphism Modal */}
         <div
