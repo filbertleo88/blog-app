@@ -377,7 +377,7 @@ const AuthModal = ({ isVisible, onClose, initialView = "login", onViewSwitch, na
 
         // Wait for toast to be visible, then redirect
         setTimeout(() => {
-          navigate("/");
+          window.location.href = "/";
         }, 1500);
       } else {
         setError(data.message || "Authentication failed");

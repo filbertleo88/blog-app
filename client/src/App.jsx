@@ -176,7 +176,10 @@ const App = () => {
     console.log("User after logout:", user); // Should be null
 
     toast.success("Logged out successfully");
-    window.location.href = "/";
+    // Wait for toast to be visible, then redirect
+    setTimeout(() => {
+      window.location.href = "/";
+    }, 1500);
   };
 
   const handleLoginClick = () => {

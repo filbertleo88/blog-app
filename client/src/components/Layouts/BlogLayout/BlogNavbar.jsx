@@ -129,8 +129,11 @@ const BlogNavbar = ({ activeMenu, posts }) => {
 
     setShowUserDropdown(false);
 
-    // Force a complete page refresh
-    window.location.href = "/";
+    toast.success("Logged out successfully");
+    // Wait for toast to be visible, then redirect
+    setTimeout(() => {
+      window.location.href = "/";
+    }, 1500);
   };
 
   const handleAuthButtonClick = () => {
